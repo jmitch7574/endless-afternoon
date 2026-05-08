@@ -3,6 +3,9 @@
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #endif
+#include <scene_manager.h>
+
+SceneManager sceneManager;
 
 int renderTextureWidth = 1920;
 int renderTextureHeight = 1080;
@@ -18,6 +21,8 @@ int main()
 
   ToggleFullscreen();
   target = LoadRenderTexture(renderTextureWidth, renderTextureHeight);
+
+  sceneManager = SceneManager();
 
 #if defined(PLATFORM_WEB)
   emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
@@ -70,9 +75,6 @@ int main()
 // Enum Scene Logic Here
 void UpdateDrawFrame(void)
 {
-  ClearBackground(RAYWHITE);
-  DrawText("Congrats! You created your first raylib-cpp window!", 160, 200, 20,
-           LIGHTGRAY);
+  sceneManager.Update();
+  sceneManager.Draw();
 }
-
-
