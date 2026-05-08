@@ -17,8 +17,17 @@ public:
   void Update() override;
   void Draw() override;
 
-  int MenuOption = true;
+  int MenuOption = 0;
   bool acceptPressed = false;
+};
+
+class Cutscene : public Scene {
+  public:
+  Cutscene();
+  ~Cutscene(void);
+
+  void Update() override;
+  void Draw() override;
 };
 
 class PlayMode : public Scene {

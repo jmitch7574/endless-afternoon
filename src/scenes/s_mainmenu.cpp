@@ -3,19 +3,29 @@
 
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
+#include <iostream>
 
 #define TITLE_SIZE 96
 
 SceneManager g_SceneManager = SceneManager();
 
-MainMenu::MainMenu() {}
-MainMenu::~MainMenu(void) {}
+MainMenu::MainMenu() 
+{
+  GuiSetStyle(DEFAULT, TEXT_SIZE, 64);
+}
 
-bool acceptPressed = false;
+MainMenu::~MainMenu(void) {}
 
 void MainMenu::Update()
 {
   acceptPressed = IsKeyPressed(KEY_Z);
+
+  if (IsKeyPressed(KEY_RIGHT)) {
+    MenuOption = 1;
+  }
+  if (IsKeyPressed(KEY_LEFT)) {
+    MenuOption = 0;
+  }
 }
 
 void MainMenu::Draw()
@@ -26,8 +36,18 @@ void MainMenu::Draw()
   DrawTextEx(GetFontDefault(), "Siesta Disasta", titlePos, TITLE_SIZE, 4, BLACK);
 
   GuiSetState(MenuOption == 0 ? STATE_FOCUSED : STATE_NORMAL);
-  if (GuiButton(Rectangle(200, 200, 400, 400), "PLAY") || (MenuOption == 0 && acceptPressed))
+  if (GuiButton(Rectangle(200, 700, 400, 200), "PLAY") || (MenuOption == 0 && acceptPressed))
   {
-    g_SceneManager.SetScene(std::make_unique<PlayMode>());
+    g_SceneManager.SetScene(std::make_unique<Cutscene>());
+  }
+
+  GuiSetState(MenuOption == 1 ? STATE_FOCUSED : STATE_NORMAL);
+  if (GuiButton(Rectangle(1320, 700, 400, 200), "QUIT") || (MenuOption == 1 && acceptPressed))
+  {
+    CloseWindow();
+  }
+
+  if (acceptPressed) {
+    std::cout << "Accept Pressed";
   }
 }

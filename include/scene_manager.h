@@ -10,7 +10,7 @@ private:
 public:
   SceneManager()
   {
-    SetScene(std::make_unique<MainMenu>());
+    
   };
 
   void SetScene(std::unique_ptr<Scene> scene)
