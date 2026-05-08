@@ -33,3 +33,19 @@ public:
   void Update() override;
   void Draw() override;
 };
+
+class ClockHand : public Entity {
+public:
+  ClockHand(raylib::Vector2 pivot, float angleDeg, float length, float thickness,
+            Color color);
+  ~ClockHand(void);
+
+  void Update() override;
+  void Draw() override;
+
+protected:
+  float angleDeg;
+  float length;
+  float thickness;
+  Color color;
+};

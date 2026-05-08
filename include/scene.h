@@ -1,4 +1,5 @@
 #pragma once
+#include "entity.h"
 
 class Scene {
 public:
@@ -28,4 +29,15 @@ public:
 
   void Update() override;
   void Draw() override;
+
+private:
+  Player player;
+  Enemy enemy;
+  ClockHand minuteHand;
+  ClockHand hourHand;
+
+  void DrawLevelBoundary();
+  void DrawLevelGrid();
+  void MaskOutsideOctagon();
+  void DrawClockMarkers();
 };
