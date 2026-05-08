@@ -5,8 +5,6 @@
 #endif
 #include <scene_manager.h>
 
-SceneManager sceneManager;
-
 int renderTextureWidth = 1920;
 int renderTextureHeight = 1080;
 RenderTexture2D target;
@@ -22,8 +20,6 @@ int main()
   ToggleFullscreen();
   target = LoadRenderTexture(renderTextureWidth, renderTextureHeight);
 
-  sceneManager = SceneManager();
-
 #if defined(PLATFORM_WEB)
   emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
 #else
@@ -32,10 +28,13 @@ int main()
 
   while (!window.ShouldClose())
   {
+
+    g_SceneManager.Update();
+
     // Render Texture - Actual Game
     BeginTextureMode(target);
 
-    UpdateDrawFrame();
+    g_SceneManager.Draw();
 
     EndTextureMode();
 
@@ -64,17 +63,9 @@ int main()
     );
 
     EndDrawing();
-    UpdateDrawFrame();
   }
 
 #endif
 
   return 0;
-}
-
-// Enum Scene Logic Here
-void UpdateDrawFrame(void)
-{
-  sceneManager.Update();
-  sceneManager.Draw();
 }

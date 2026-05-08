@@ -16,6 +16,10 @@ public:
 
   void Update() const override;
   void Draw() const override;
+
+private:
+  int MenuOption;
+  bool acceptPressed;
 };
 
 class PlayMode : public Scene {

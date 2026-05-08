@@ -30,3 +30,5 @@ public:
       currentScene->Draw();
   }
 };
+
+extern SceneManager g_SceneManager;
