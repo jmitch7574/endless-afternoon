@@ -8,6 +8,7 @@ if (NOT raylib_FOUND)
     FetchContent_Declare(
         raylib
         GIT_REPOSITORY https://github.com/raysan5/raylib.git
+        GIT_TAG 6.0
         GIT_SHALLOW 1
     )
     FetchContent_MakeAvailable(raylib)
@@ -28,7 +29,7 @@ if (NOT raylib_cpp_FOUND)
 endif()
 
 # Automatically grab all source/header files
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS *.cpp src/*.cpp)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS include/*.h)
 
 add_executable(${PROJECT_NAME}
