@@ -17,3 +17,12 @@ public:
   void Update() const override;
   void Draw() const override;
 };
+
+class PlayMode : public Scene {
+public:
+  PlayMode();
+  ~PlayMode(void);
+
+  void Update() const override;
+  void Draw() const override;
+};

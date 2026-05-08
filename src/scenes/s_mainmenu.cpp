@@ -1,7 +1,4 @@
-#pragma once
-
 #include "scene.h"
-
 
 MainMenu::MainMenu() {}
 MainMenu::~MainMenu(void) {}
