@@ -1,5 +1,6 @@
 CompileFlags:
   Add:
+    - "-IC:/Users/mikel/endless-afternoon/include"
     - "-IC:/Users/mikel/endless-afternoon/build/_deps/raylib_cpp-src/include"
     - "-IC:/Users/mikel/endless-afternoon/build/_deps/raylib-src/src"
     - "-std=c++20"
