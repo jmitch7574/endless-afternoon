@@ -10,7 +10,7 @@ private:
 public:
   SceneManager()
   {
-    SetScene(std::make_unique<PlayMode>());
+    
   };
 
   void SetScene(std::unique_ptr<Scene> scene)

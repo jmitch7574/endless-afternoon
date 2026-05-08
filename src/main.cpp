@@ -17,12 +17,15 @@ int main() {
 
   ToggleFullscreen();
   target = LoadRenderTexture(renderTextureWidth, renderTextureHeight);
+  DisableCursor();
 
 #if defined(PLATFORM_WEB)
   emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
 #else
 
   SetTargetFPS(60);
+
+  g_SceneManager.SetScene(std::make_unique<MainMenu>());
 
   while (!window.ShouldClose())
   {
