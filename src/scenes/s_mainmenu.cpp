@@ -6,16 +6,19 @@
 
 #define TITLE_SIZE 96
 
+SceneManager g_SceneManager = SceneManager();
+
 MainMenu::MainMenu() {}
 MainMenu::~MainMenu(void) {}
 
-bool accpetPressed;
+bool acceptPressed = false;
 
-void MainMenu::Update() const
+void MainMenu::Update()
 {
+  acceptPressed = IsKeyPressed(KEY_Z);
 }
 
-void MainMenu::Draw() const
+void MainMenu::Draw()
 {
   ClearBackground(WHITE);
   Vector2 titleSize = MeasureTextEx(GetFontDefault(), "Siesta Disasta", TITLE_SIZE, 4);

@@ -3,7 +3,7 @@
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #endif
-#include <scene_manager.h>
+#include "scene_manager.h"
 
 int renderTextureWidth = 1920;
 int renderTextureHeight = 1080;

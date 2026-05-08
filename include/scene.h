@@ -5,8 +5,8 @@ public:
   Scene() = default;
   virtual ~Scene() = default;
 
-  virtual void Update() const = 0;
-  virtual void Draw() const = 0;
+  virtual void Update() = 0;
+  virtual void Draw() = 0;
 };
 
 class MainMenu : public Scene {
@@ -14,12 +14,11 @@ public:
   MainMenu();
   ~MainMenu(void);
 
-  void Update() const override;
-  void Draw() const override;
+  void Update() override;
+  void Draw() override;
 
-private:
-  int MenuOption;
-  bool acceptPressed;
+  int MenuOption = true;
+  bool acceptPressed = false;
 };
 
 class PlayMode : public Scene {
@@ -27,6 +26,6 @@ public:
   PlayMode();
   ~PlayMode(void);
 
-  void Update() const override;
-  void Draw() const override;
+  void Update() override;
+  void Draw() override;
 };
