@@ -3,5 +3,5 @@
 PlayMode::PlayMode() {}
 PlayMode::~PlayMode(void) {}
 
-void PlayMode::Update() const {}
-void PlayMode::Draw() const {}
+void PlayMode::Update() {}
+void PlayMode::Draw() {}
