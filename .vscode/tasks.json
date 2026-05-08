@@ -5,6 +5,15 @@
             "label": "Build and Run",
             "type": "shell",
             "command": "cmake -S . -B build && cmake --build build --config Debug && .\\build\\Debug\\endless_afternoon.exe",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
             "group": {
                 "kind": "build",
                 "isDefault": true
