@@ -39,6 +39,10 @@ class Player : public Entity
 	float dashInvulnerabilityTimer = 0.0f;
 	int dashRange = 3;
 
+	float healCooldown = 15;
+	float healRate = 10; // Per Second
+	float timeSinceLastDamage;
+
 	bool isPunchFlipped = false;
 
 	PlayerTrail trail[120] = {0};

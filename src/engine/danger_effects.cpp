@@ -30,10 +30,28 @@ void DangerEffects::Update()
 
   SFXTimer += GetFrameTime();
 
-  targetVolume = 0.8f - playScene->player.GetHealth() / 80.0f;
-  targetVolume = std::max(targetVolume, 0.0f);
+  if (playScene->player.GetHealth() > 60)
+  {
+    targetVolume = 0;
+  }
+  else if (playScene->player.GetHealth() > 40)
+  {
+    targetVolume = 0.02f;
+  }
+  else if (playScene->player.GetHealth() > 30)
+  {
+    targetVolume = 0.2f;
+  }
+  else if (playScene->player.GetHealth() > 20)
+  {
+    targetVolume = 0.4f;
+  }
+  else
+  {
+    targetVolume = 0.8f;
+  }
 
-  volume = Lerp(volume, targetVolume, 0.01f);
+  volume = Lerp(volume, targetVolume, 0.001f);
 
   SetSoundVolume(Resources::s_heartbeat, volume);
 
@@ -42,7 +60,7 @@ void DangerEffects::Update()
     SetSoundVolume(Resources::s_tocks[i], volume);
   }
 
-  if (SFXTimer > 2)
+  if (SFXTimer > 2 - targetVolume * 1.2f)
   {
     PlaySound(Resources::s_heartbeat);
     //PlaySound(Resources::s_tocks[GetRandomValue(0, 8)]);
@@ -53,5 +71,6 @@ void DangerEffects::Update()
 
 void DangerEffects::Draw() 
 {
-  DrawRectangle(0, 0, RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, Color(45, 0, 0, (unsigned char)opacity));
+  DrawRectangle(0, 0, RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, Color(45, 0, 0, opacity));
+  DrawText(TextFormat("Target Volume: %f", targetVolume), 20, 230, 20, WHITE);
 }
