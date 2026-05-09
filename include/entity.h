@@ -24,8 +24,8 @@ public:
 
   void Update() override;
   void Draw() override;
-protected:
   Vector2 gridPosition;
+protected:
   float lerpSpeed = 0.2f;
   float moveCooldown = 0.25f;
   float currentMoveCooldown = 0;

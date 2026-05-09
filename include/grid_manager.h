@@ -14,5 +14,5 @@ class GridManager {
 public:
   static void DrawLevelGrid();
   static Vector2 GridPositionToWorld(Vector2 GridPos);
+  bool IsValidGridPosition(Vector2 GridPos);
 };
-

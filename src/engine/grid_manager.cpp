@@ -18,5 +18,9 @@ void GridManager::DrawLevelGrid() {
 
 Vector2 GridManager::GridPositionToWorld(Vector2 GridPos)
 {
-  return Vector2Add(Vector2(START_X, START_Y), Vector2Scale(GridPos, CELL_SIZE));
+  return Vector2Add(Vector2(START_X + CELL_SIZE / 2, START_Y + CELL_SIZE / 2), Vector2Scale(GridPos, CELL_SIZE));
+}
+
+bool GridManager::IsValidGridPosition(Vector2 GridPos) {
+  return true;
 }

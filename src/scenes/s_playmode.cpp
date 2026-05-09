@@ -25,6 +25,10 @@ void PlayMode::Draw() {
   minuteHand.Draw();
   player.Draw();
   enemy.Draw();
+
+#ifndef NDEBUG
+  DrawText(TextFormat("Player Pos: %f, %f", player.gridPosition.x, player.gridPosition.y), 20, 20, 20, WHITE);
+#endif
 }
 
 void PlayMode::DrawLevelBoundary() {
