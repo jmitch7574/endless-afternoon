@@ -3,19 +3,25 @@
 #include "keybinds.h"
 #include <scene.h>
 #include <iostream>
+#include "raylib-cpp.hpp"
+#include "utils.h"
 
 
 struct PlayerTrail
 {
 	Vector2 pos;
 	int opacity;
-	float radius;
 };
 
 PlayerTrail trail[120] = {0};
+PlayerTrail punchTrail[40] = {0};
 
 bool movedThisFrame = false;
 bool attackedThisFrame = false;
+float hitAnimationTime = 1000;
+Vector2 currentDirection = Vector2(1, 0);
+Vector2 handpos;
+float peakThreshold = 0;
 
 Player::Player(raylib::Vector2 startPos) : Entity(startPos)
 {
@@ -34,6 +40,7 @@ void Player::Update()
 	// Lerp Entity Position to Grid Position
 	position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
 	currentMoveCooldown -= GetFrameTime();
+  hitAnimationTime += GetFrameTime();
 
 	Vector2 gridPositionLastFrame = gridPosition;
 	if (IsKeyDown(MOVE_LEFT))
@@ -45,15 +52,18 @@ void Player::Update()
 	if (IsKeyDown(MOVE_DOWN))
 		TryMove(Vector2(0, 1));
 
-  if (movedThisFrame || attackedThisFrame) 
+  if (movedThisFrame) 
   {
     currentMoveCooldown = moveCooldown;
+  }
+  if (attackedThisFrame)
+  {
+    currentMoveCooldown = moveCooldown * 3;
   }
 
 	for (int i = 119; i > 0; i--)
 	{
 		trail[i] = trail[i - 1];
-		trail[i].radius -= 0.5f;
 		trail[i].opacity -= 25;
 
 		if (Vector2Equals(trail[i].pos, position))
@@ -62,7 +72,48 @@ void Player::Update()
 		}
 	}
 
-	trail[0] = {position, 255, CELL_SIZE / 4.0f};
+	trail[0] = {position, 255};
+
+  // THE FIST
+
+  
+  float hitAnimationLerp = sinf((3.5 * pow(hitAnimationTime, 0.5f)));
+  hitAnimationLerp = std::max(hitAnimationLerp, 0.0f);
+
+  Vector2 handStart = Vector2(0, 20);
+  Vector2 handEnd   = Vector2(45, 0);
+  Vector2 ControlOne = Vector2(20, 25);
+  Vector2 ControlTwo = Vector2(45, 10);
+
+  float threshold = hitAnimationLerp * 20;
+  
+  peakThreshold = std::max(threshold, peakThreshold);
+
+  threshold = std::max(threshold, peakThreshold);
+
+
+  if (hitAnimationTime < 1)
+  {
+    handpos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, hitAnimationLerp);
+    float angle = Utils::Vector2ToAngle(currentDirection) * PI / 180.0f;
+
+    handpos = Vector2Rotate(handpos, angle);
+
+  }
+  for (int i = 0; i < 20; i++)
+  {
+    if (i >= threshold) continue;
+
+    Vector2 trailPos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, (float)i / 20.0f);
+    float angle = Utils::Vector2ToAngle(currentDirection) * PI / 180.0f;
+    trailPos = Vector2Rotate(trailPos, angle);
+
+
+    punchTrail[i] = {
+      trailPos,
+      std::max(255 - (int)(hitAnimationTime * (400 - i * 5)), 0)
+    };
+  }
 }
 
 void Player::Draw()
@@ -71,12 +122,24 @@ void Player::Draw()
 	{
 		if (trail[i].opacity < 0)
 			continue;
-
-		int trail_radius = (CELL_SIZE / 2.0f) - ((255 - trail[i].opacity) / 10);
 		DrawCircleV(trail[i].pos, CELL_SIZE / 2.0f, Color{50, 120, 160, (unsigned char)trail[i].opacity});
 	}
 
+  
+	for (int i = 20; i > 0; i--)
+	{
+		if (punchTrail[i].opacity < 0)
+			continue;
+
+		DrawCircleV(position + punchTrail[i].pos, CELL_SIZE / 6.0f, Color{ 102, 191, 255, (unsigned char) punchTrail[i].opacity });
+	}
+
 	DrawCircleV(position, CELL_SIZE / 2.0f, SKYBLUE);
+
+  if (hitAnimationTime < 1)
+  {
+    DrawCircleV(position + handpos, CELL_SIZE / 6.0f, SKYBLUE);
+  }
 }
 
 void Player::TryMove(Vector2 dir) {
@@ -97,8 +160,15 @@ void Player::TryMove(Vector2 dir) {
     
     std::cout << "Enemy Attacked";
 
+    hitAnimationTime = 0;
+    currentDirection = dir;
+
+    peakThreshold = 0;
+
+
     return;
   }
 
   gridPosition = Vector2Add(gridPosition, dir);
+  currentDirection = dir;
 }
