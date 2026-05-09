@@ -26,12 +26,17 @@ Cutscene::Cutscene()
 	ticks = 0;
 	currentLine = 0;
 	shownText = 0;
+
 }
 
 Cutscene::~Cutscene() {}
 
 void Cutscene::Update()
 {
+#ifndef NDEBUG
+	g_SceneManager.SetScene(std::make_unique<PlayMode>());
+	return;
+#endif
 	ticks++;
 
 	shownText = (ticks / 5);
