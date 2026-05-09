@@ -68,7 +68,7 @@ bool ArenaManager::IsValidGridPosition(Vector2 worldPosition)
 	if (dx > GRID_HALF_SIZE || dy > GRID_HALF_SIZE)
 		return false;
 
-	if (dx + dy > GRID_HALF_SIZE + OCTAGON_HALF_FLAT_EDGE_PX)
+	if (dx + dy + 5.0f > GRID_HALF_SIZE + OCTAGON_HALF_FLAT_EDGE_PX)
 		return false;
 
 	return true;
