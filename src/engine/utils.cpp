@@ -55,3 +55,10 @@ bool Utils::LineIntersectsCircle(Vector2 p1, Vector2 p2, Vector2 center, float r
 
     return false;
 }
+
+float Utils::NormalizeAngle(float a) 
+{
+    a = fmod(a, 360.0f);
+    if (a < 0) a += 360.0f;
+    return a;
+}

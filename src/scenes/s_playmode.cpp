@@ -33,11 +33,21 @@ void PlayMode::Update()
 
   // Special Check - Is the player in the evil zone
 
-  float playerAngleToCenter = Utils::Vector2ToAngle(Vector2Normalize(Vector2Subtract(player.GetPosition(),minuteHand.GetPosition())));
+  float playerAngleToCenter = Utils::NormalizeAngle(Utils::Vector2ToAngle(Vector2Normalize(Vector2Subtract(player.GetPosition(),minuteHand.GetPosition()))));
 
-  playerAngleToCenter = fmod(playerAngleToCenter, 360.0f);
+  float hourAngle = Utils::NormalizeAngle(hourHand.GetAngle());
+  float minuteAngle = Utils::NormalizeAngle(minuteHand.GetAngle());
 
-  bool collision = minuteHand.GetAngle() > playerAngleToCenter && playerAngleToCenter > hourHand.GetAngle();
+  bool collision;
+
+  if (hourAngle <= minuteAngle)
+  {
+    collision = minuteAngle > playerAngleToCenter && playerAngleToCenter > hourAngle;
+  }
+  else
+  {
+    collision = minuteAngle > playerAngleToCenter || playerAngleToCenter > hourAngle;
+  }
 
   timeSinceEvilZoneTick += GetFrameTime();
 
@@ -79,6 +89,9 @@ void PlayMode::Draw()
 	DrawText(TextFormat("Chase: %d/%d", enemy.GetChaseMovesTaken(), enemy.GetChaseBudget()), 20, 90, 20, WHITE);
 	DrawText(TextFormat("Punches: %d/%d", enemy.GetNormalAttackCount(), enemy.GetNormalAttacksPerCycle()), 20, 110, 20,
 			 WHITE);
+  DrawText(TextFormat("Hour Angle: %f", Utils::NormalizeAngle(hourHand.GetAngle())), 20, 140, 20, WHITE);
+  DrawText(TextFormat("Minute Angle: %f", Utils::NormalizeAngle(minuteHand.GetAngle())), 20, 170, 20, WHITE);
+  DrawText(TextFormat("Player Angle: %f", Utils::NormalizeAngle(Utils::Vector2ToAngle(Vector2Normalize(Vector2Subtract(player.GetPosition(),minuteHand.GetPosition()))))), 20, 200, 20, WHITE);
 #endif
 }
 
@@ -93,5 +106,19 @@ void PlayMode::DrawEvilZone()
 {
   if (minuteHand.activated == false) return;
 
-  DrawCircleSector(minuteHand.GetPosition(), 1000, hourHand.GetAngle(), minuteHand.GetAngle(), 1, Color(255, 0, 0, 128));
+  float hourAngle   = Utils::NormalizeAngle(hourHand.GetAngle());
+  float minuteAngle = Utils::NormalizeAngle(minuteHand.GetAngle());
+  Color red = Color(255, 0, 0, 128);
+
+  if (hourAngle <= minuteAngle)
+  {
+      // Simple case: no wrap
+      DrawCircleSector(minuteHand.GetPosition(), 1000, hourAngle, minuteAngle, 1, red);
+  }
+  else
+  {
+      // Wrapping case: draw from hourAngle to 360, then 0 to minuteAngle
+      DrawCircleSector(minuteHand.GetPosition(), 1000, hourAngle,   360.0f,    1, red);
+      DrawCircleSector(minuteHand.GetPosition(), 1000, 0.0f,        minuteAngle, 1, red);
+  }
 }
