@@ -135,7 +135,7 @@ void PlayMode::Draw()
 
 	ArenaManager::MaskOutsideOctagon();
 	ArenaManager::DrawOctagonBoundary();
-	ArenaManager::DrawClockMarkers();
+	// ArenaManager::DrawClockMarkers();
 	hourHand.Draw();
 	minuteHand.Draw();
 	if (!gameOverTriggered)

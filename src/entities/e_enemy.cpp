@@ -148,12 +148,26 @@ void Enemy::EnterState(EnemyState nextState)
 		EnterRecover(ATTACK_RECOVER_DURATION);
 		break;
 	case EnemyState::SecondaryWindUp:
+		currentSecondaryAttack = nextSecondaryAttack;
+		if (currentSecondaryAttack == 2)
+		{
+			spinningSecondarySpinAngle = (float)GetRandomValue(0, 359);
+			spinningSecondarySpinDirection = GetRandomValue(0, 1) == 0 ? -1 : 1;
+		}
 		stateTimer = secondaryWindUpDuration;
 		break;
 	case EnemyState::SecondaryAttack:
-		stateTimer = secondaryAttackDuration;
-		secondaryAttackHasHit = false;
-		secondaryPulsePreviousRadius = 0.0f;
+		if (currentSecondaryAttack == 2)
+		{
+			stateTimer = spinningSecondaryAttackDuration;
+			spinningSecondaryDamageCooldown = 0.0f;
+		}
+		else
+		{
+			stateTimer = secondaryAttackDuration;
+			secondaryAttackHasHit = false;
+			secondaryPulsePreviousRadius = 0.0f;
+		}
 		break;
 	case EnemyState::SecondaryRecover:
 		stateTimer = secondaryRecoverDuration;
@@ -193,25 +207,31 @@ void Enemy::UpdateIdle() { EnterState(EnemyState::Advance); }
 
 void Enemy::UpdateAdvance()
 {
-	const int dist = DistanceFromBossFootprint(gridPosition, targetGridPosition);
-	if (dist > 0 && dist <= GetNextBasicAttackRange())
-	{
-		EnterState(EnemyState::WindUp);
-		return;
-	}
-
-	if (currentMoveCooldown > 0)
+	TryPrimaryAttack();
+	if (currentState != EnemyState::Advance)
 	{
 		return;
 	}
 
+	if (currentMoveCooldown > 0 || primaryAttackMovementLockTimer > 0.0f)
+	{
+		return;
+	}
+
+	TryMoveTowardTarget();
+	TryPrimaryAttack();
+}
+
+bool Enemy::TryMoveTowardTarget()
+{
 	const bool isOverlappingTarget = BossFootprintContainsCell(gridPosition, targetGridPosition);
+	const int currentDistance = DistanceFromBossFootprint(gridPosition, targetGridPosition);
 	const Vector2 directions[] = {
 		Vector2{1.0f, 0.0f}, Vector2{-1.0f, 0.0f}, Vector2{0.0f, 1.0f},	 Vector2{0.0f, -1.0f},
 		Vector2{1.0f, 1.0f}, Vector2{1.0f, -1.0f}, Vector2{-1.0f, 1.0f}, Vector2{-1.0f, -1.0f},
 	};
 	Vector2 bestNextPos = gridPosition;
-	int bestDistance = isOverlappingTarget ? -1 : dist;
+	int bestDistance = isOverlappingTarget ? -1 : currentDistance;
 	bool foundMove = false;
 
 	for (const Vector2 &moveDir : directions)
@@ -242,8 +262,8 @@ void Enemy::UpdateAdvance()
 
 	if (!foundMove)
 	{
-		EnterRecover(CHASE_TIMEOUT_RECOVER_DURATION);
-		return;
+		currentMoveCooldown = moveCooldown;
+		return false;
 	}
 
 	gridPosition = bestNextPos;
@@ -253,8 +273,10 @@ void Enemy::UpdateAdvance()
 	if (chaseMovesTaken >= chaseBudget &&
 		DistanceFromBossFootprint(gridPosition, targetGridPosition) > GetNextBasicAttackRange())
 	{
-		EnterRecover(CHASE_TIMEOUT_RECOVER_DURATION);
+		chaseMovesTaken = 0;
 	}
+
+	return true;
 }
 
 void Enemy::UpdateWindUp(float deltaTime)
@@ -336,6 +358,8 @@ void Enemy::Update()
 
 	position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
 	currentMoveCooldown -= deltaTime;
+	primaryAttackMovementLockTimer -= deltaTime;
+	currentPrimaryAttackCooldown -= deltaTime;
 	UpdatePunchEffect(deltaTime);
 
 	switch (currentState)

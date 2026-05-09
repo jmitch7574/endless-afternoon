@@ -133,7 +133,7 @@ void MainMenu::Update()
 		selectedOption = MenuOption::Play;
 	}
 
-	const bool accepted = IsKeyPressed(ACCEPT) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+	const bool accepted = IsKeyPressed(PRIMARY) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 
 	if (!accepted)
 	{

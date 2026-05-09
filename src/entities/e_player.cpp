@@ -54,8 +54,6 @@ Vector2 NormalizeGridDirection(Vector2 direction)
 
 bool IsZeroDirection(Vector2 direction) { return direction.x == 0.0f && direction.y == 0.0f; }
 
-bool IsSameDirection(Vector2 a, Vector2 b) { return (int)a.x == (int)b.x && (int)a.y == (int)b.y; }
-
 Vector2 GetHeldMovementDirection()
 {
 	Vector2 direction = Vector2{0.0f, 0.0f};
@@ -80,33 +78,9 @@ Vector2 GetHeldMovementDirection()
 	return NormalizeGridDirection(direction);
 }
 
-bool HasPressedMovementKey()
-{
-	return IsKeyPressed(MOVE_LEFT) || IsKeyPressed(MOVE_RIGHT) || IsKeyPressed(MOVE_UP) || IsKeyPressed(MOVE_DOWN);
-}
-
 bool IsValidArenaGridPosition(Vector2 gridPosition)
 {
 	return ArenaManager::IsValidGridPosition(ArenaManager::GridPositionToWorld(gridPosition));
-}
-
-bool DashPathHitsEnemy(Vector2 startGridPosition, Vector2 dashDir, int dashRange)
-{
-	for (int step = 1; step <= dashRange; step++)
-	{
-		const Vector2 candidate = Vector2Add(startGridPosition, Vector2Scale(dashDir, (float)step));
-		if (!IsValidArenaGridPosition(candidate))
-		{
-			return false;
-		}
-
-		if (IsEnemyBlockingGridPosition(candidate))
-		{
-			return true;
-		}
-	}
-
-	return false;
 }
 
 int DirectionTowardArenaCenter(int gridCoordinate)
@@ -180,30 +154,25 @@ void Player::Update()
 	position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
 	const float deltaTime = GetFrameTime();
 	currentMoveCooldown -= deltaTime;
+	attackCooldownTimer -= deltaTime;
 	dashCooldownTimer -= deltaTime;
 	dashInvulnerabilityTimer -= deltaTime;
 	hitAnimationTime += deltaTime;
 
-	if (HasPressedMovementKey())
+	Vector2 actionDirection = GetHeldMovementDirection();
+	if (IsZeroDirection(actionDirection))
 	{
-		const Vector2 tapDirection = GetHeldMovementDirection();
-		const float currentTime = (float)GetTime();
-		const bool dashPathHitsEnemy = DashPathHitsEnemy(gridPosition, tapDirection, dashRange);
-		const bool dashIsReady = dashCooldownTimer <= 0.0f;
-		const bool canDashOnThisBeat = currentMoveCooldown > 0.0f || dashPathHitsEnemy;
+		actionDirection = currentDirection;
+	}
 
-		if (!IsZeroDirection(tapDirection) && dashIsReady && canDashOnThisBeat &&
-			IsSameDirection(tapDirection, lastDashTapDirection) && currentTime - lastDashTapTime <= dashDoubleTapWindow)
-		{
-			TryDash(tapDirection);
-			lastDashTapTime = -1000.0f;
-			lastDashTapDirection = Vector2{0.0f, 0.0f};
-		}
-		else
-		{
-			lastDashTapTime = currentTime;
-			lastDashTapDirection = tapDirection;
-		}
+	if (IsKeyPressed(PRIMARY))
+	{
+		TryAttack(actionDirection);
+	}
+
+	if (!attackedThisFrame && IsKeyPressed(SECONDARY))
+	{
+		TryDash(actionDirection);
 	}
 
 	if (!dashedThisFrame)
@@ -226,11 +195,6 @@ void Player::Update()
 	{
 		currentMoveCooldown = 0.0f;
 	}
-	if (attackedThisFrame)
-	{
-		currentMoveCooldown = moveCooldown * 3;
-	}
-
 	for (int i = 119; i > 0; i--)
 	{
 		trail[i] = trail[i - 1];
@@ -265,7 +229,7 @@ void Player::Update()
 		handpos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, hitAnimationLerp);
 		if (isPunchFlipped)
 			handpos.y = -handpos.y;
-		float angle = Utils::Vector2ToAngle(currentDirection) * PI / 180.0f;
+		float angle = Utils::Vector2ToAngle(attackDirection) * PI / 180.0f;
 
 		handpos = Vector2Rotate(handpos, angle);
 	}
@@ -277,7 +241,7 @@ void Player::Update()
 		Vector2 trailPos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, (float)i / 20.0f);
 		if (isPunchFlipped)
 			trailPos.y = -trailPos.y;
-		float angle = Utils::Vector2ToAngle(currentDirection) * PI / 180.0f;
+		float angle = Utils::Vector2ToAngle(attackDirection) * PI / 180.0f;
 		trailPos = Vector2Rotate(trailPos, angle);
 
 		punchTrail[i] = {trailPos, std::max(255 - (int)(hitAnimationTime * (400 - i * 5)), 0)};
@@ -321,8 +285,6 @@ void Player::TryMove(Vector2 dir)
 {
 	if (currentMoveCooldown > 0)
 		return;
-	if (attackedThisFrame)
-		return;
 
 	Vector2 moveDir = dir;
 	Vector2 cornerAssistDir = GetBoundaryAssistDirection(gridPosition, dir);
@@ -337,29 +299,41 @@ void Player::TryMove(Vector2 dir)
 	if (!ArenaManager::IsValidGridPosition(hypotheticalWorldPos))
 		return;
 
-	movedThisFrame = true;
-
-	bool enemyCollide = IsEnemyBlockingGridPosition(nextGridPosition);
-
-	if (enemyCollide)
+	if (IsEnemyBlockingGridPosition(nextGridPosition))
 	{
-		// Successful Attack
-		attackedThisFrame = true;
-
-		hitAnimationTime = 0;
-		currentDirection = moveDir;
-
-		peakThreshold = 0;
-
-		playScene->EnemyHit(25.0f);
-
-		isPunchFlipped = GetRandomValue(0, 1) == 1;
-
 		return;
 	}
 
+	movedThisFrame = true;
 	gridPosition = nextGridPosition;
 	currentDirection = moveDir;
+}
+
+void Player::TryAttack(Vector2 dir)
+{
+	if (attackCooldownTimer > 0.0f || dashedThisFrame)
+	{
+		return;
+	}
+
+	const Vector2 attackDir = NormalizeGridDirection(dir);
+	if (IsZeroDirection(attackDir))
+	{
+		return;
+	}
+
+	attackedThisFrame = true;
+	attackCooldownTimer = attackCooldown;
+	hitAnimationTime = 0.0f;
+	attackDirection = attackDir;
+	currentDirection = attackDir;
+	peakThreshold = 0.0f;
+	isPunchFlipped = GetRandomValue(0, 1) == 1;
+
+	if (playScene != nullptr && IsEnemyBlockingGridPosition(Vector2Add(gridPosition, attackDir)))
+	{
+		playScene->EnemyHit(25.0f);
+	}
 }
 
 void Player::TryDash(Vector2 dir)

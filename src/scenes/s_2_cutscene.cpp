@@ -43,7 +43,7 @@ void Cutscene::Update()
 
 	textToDisplay = currentString.substr(0, shownText);
 
-	if (IsKeyPressed(ACCEPT))
+	if (IsKeyPressed(PRIMARY))
 		cutsceneSkipped = true;
 
 	if (shownText > currentString.length() + 30 && currentLine < 2)
