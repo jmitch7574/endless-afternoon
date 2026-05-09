@@ -39,6 +39,10 @@ class Player : public Entity
 	Vector2 lastDashTapDirection = Vector2{0.0f, 0.0f};
 	int dashRange = 3;
 
+	float healCooldown = 6;
+	float healRate = 10; // Per Second
+	float timeSinceLastDamage;
+
 	bool isPunchFlipped = false;
 
 	PlayerTrail trail[120] = {0};
