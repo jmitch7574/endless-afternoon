@@ -46,7 +46,6 @@ private:
   ClockHand hourHand;
 
   void DrawLevelBoundary();
-  void DrawLevelGrid();
   void MaskOutsideOctagon();
   void DrawClockMarkers();
 };

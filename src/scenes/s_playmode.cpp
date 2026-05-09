@@ -1,9 +1,10 @@
 #include "scene.h"
 #include <cmath>
 #include <raylib-cpp.hpp>
+#include "grid_manager.h"
 
 PlayMode::PlayMode()
-    : player(Vector2{940, 520}), enemy(Vector2{1085, 415}),
+    : player(Vector2{10, 10}), enemy(Vector2{1085, 415}),
       minuteHand(Vector2{960, 540}, -90.0f, 440.0f, 8.0f, WHITE),
       hourHand(Vector2{960, 540}, 0.0f, 280.0f, 12.0f, WHITE) {}
 PlayMode::~PlayMode(void) {}
@@ -16,7 +17,7 @@ void PlayMode::Update() {
 }
 void PlayMode::Draw() {
   ClearBackground(BLACK);
-  DrawLevelGrid();
+  GridManager::DrawLevelGrid();
   MaskOutsideOctagon();
   DrawLevelBoundary();
   DrawClockMarkers();
@@ -99,23 +100,4 @@ void PlayMode::MaskOutsideOctagon() {
   DrawTriangle(Vector2{c.x - apothem, c.y + apothem},
                Vector2{c.x - halfFlat, c.y + apothem},
                Vector2{c.x - apothem, c.y + halfFlat}, BLACK);
-}
-
-void PlayMode::DrawLevelGrid() {
-  const int cellSize = 50;
-  const int cellCount = 32;
-  const int totalSize = cellSize * cellCount; // 640
-  const float startX = 960 - totalSize / 2.0f;
-  const float startY = 540 - totalSize / 2.0f;
-  const float endX = startX + totalSize;
-  const float endY = startY + totalSize;
-  const Color gridColor = Fade(WHITE, 0.3f);
-
-  for (int i = 0; i <= cellCount; i++) {
-    float offset = i * cellSize;
-    DrawLineV(Vector2{startX + offset, startY}, Vector2{startX + offset, endY},
-              gridColor);
-    DrawLineV(Vector2{startX, startY + offset}, Vector2{endX, startY + offset},
-              gridColor);
-  }
 }

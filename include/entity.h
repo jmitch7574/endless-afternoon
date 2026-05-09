@@ -20,8 +20,15 @@ public:
   Player(raylib::Vector2 startPos);
   ~Player(void);
 
+  void TryMove(Vector2 dir);
+
   void Update() override;
   void Draw() override;
+protected:
+  Vector2 gridPosition;
+  float lerpSpeed = 0.2f;
+  float moveCooldown = 0.25f;
+  float currentMoveCooldown = 0;
 };
 
 class Enemy : public Entity {
