@@ -105,12 +105,12 @@ void PlayMode::Update()
   {
       if (timeSinceEvilZoneTick >= 3.0f)
       {
-          player.Hurt(40);
+          player.Hurt(40, D_EvilZone);
           timeSinceEvilZoneTick = 0;
       }
       else if (timeSinceEvilZoneTick >= 1.0f)
       {
-          player.Hurt(5);
+          player.Hurt(5, D_EvilZone);
           timeSinceEvilZoneTick = 0;
       }
   }

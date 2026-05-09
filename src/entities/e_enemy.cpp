@@ -95,10 +95,7 @@ int Enemy::GetNormalAttacksPerCycle() const { return normalAttacksPerCycle; }
 
 int Enemy::GetMaxHealth() const { return maxHealth; }
 
-void Enemy::Hurt(float amount)
-{
-	health = std::max(0.0f, health - amount);
-}
+void Enemy::Hurt(float amount) { health = std::max(0.0f, health - amount); }
 
 void Enemy::SetTargetGridPosition(Vector2 target) { targetGridPosition = target; }
 
@@ -192,10 +189,7 @@ Vector2 Enemy::GetPunchDirectionToTarget() const
 	return Vector2Normalize(targetOffset);
 }
 
-void Enemy::UpdateIdle()
-{
-	EnterState(EnemyState::Advance);
-}
+void Enemy::UpdateIdle() { EnterState(EnemyState::Advance); }
 
 void Enemy::UpdateAdvance()
 {
@@ -213,8 +207,8 @@ void Enemy::UpdateAdvance()
 
 	const bool isOverlappingTarget = BossFootprintContainsCell(gridPosition, targetGridPosition);
 	const Vector2 directions[] = {
-		Vector2{1.0f, 0.0f},  Vector2{-1.0f, 0.0f}, Vector2{0.0f, 1.0f},  Vector2{0.0f, -1.0f},
-		Vector2{1.0f, 1.0f},  Vector2{1.0f, -1.0f}, Vector2{-1.0f, 1.0f}, Vector2{-1.0f, -1.0f},
+		Vector2{1.0f, 0.0f}, Vector2{-1.0f, 0.0f}, Vector2{0.0f, 1.0f},	 Vector2{0.0f, -1.0f},
+		Vector2{1.0f, 1.0f}, Vector2{1.0f, -1.0f}, Vector2{-1.0f, 1.0f}, Vector2{-1.0f, -1.0f},
 	};
 	Vector2 bestNextPos = gridPosition;
 	int bestDistance = isOverlappingTarget ? -1 : dist;
