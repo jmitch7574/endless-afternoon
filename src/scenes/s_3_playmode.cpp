@@ -1,11 +1,12 @@
 #include "arena_manager.h"
+#include "entities/entity.h"
 #include "renderer.h"
 #include "scene.h"
 #include "scene_manager.h"
+#include "utils.h"
 #include <algorithm>
 #include <cmath>
 #include <raylib-cpp.hpp>
-#include "utils.h"
 
 namespace
 {
@@ -17,10 +18,7 @@ constexpr float RED_LIGHT_DAMAGE_INTERVAL = 0.5f;
 constexpr float RED_LIGHT_DAMAGE = 5.0f;
 constexpr int RED_LIGHT_CELLS_PER_WAVE = 5;
 
-bool IsSameGridCell(Vector2 a, Vector2 b)
-{
-	return (int)a.x == (int)b.x && (int)a.y == (int)b.y;
-}
+bool IsSameGridCell(Vector2 a, Vector2 b) { return (int)a.x == (int)b.x && (int)a.y == (int)b.y; }
 
 Rectangle GridCellBounds(Vector2 gridPosition)
 {
@@ -81,39 +79,40 @@ void PlayMode::Update()
 	hourHand.Update();
 	UpdateRedLightGreenLight(GetFrameTime());
 
-  // Special Check - Is the player in the evil zone
+	// Special Check - Is the player in the evil zone
 
-  float playerAngleToCenter = Utils::NormalizeAngle(Utils::Vector2ToAngle(Vector2Normalize(Vector2Subtract(player.GetPosition(),minuteHand.GetPosition()))));
+	float playerAngleToCenter = Utils::NormalizeAngle(
+		Utils::Vector2ToAngle(Vector2Normalize(Vector2Subtract(player.GetPosition(), minuteHand.GetPosition()))));
 
-  float hourAngle = Utils::NormalizeAngle(hourHand.GetAngle());
-  float minuteAngle = Utils::NormalizeAngle(minuteHand.GetAngle());
+	float hourAngle = Utils::NormalizeAngle(hourHand.GetAngle());
+	float minuteAngle = Utils::NormalizeAngle(minuteHand.GetAngle());
 
-  bool collision;
+	bool collision;
 
-  if (hourAngle <= minuteAngle)
-  {
-    collision = minuteAngle > playerAngleToCenter && playerAngleToCenter > hourAngle;
-  }
-  else
-  {
-    collision = minuteAngle > playerAngleToCenter || playerAngleToCenter > hourAngle;
-  }
+	if (hourAngle <= minuteAngle)
+	{
+		collision = minuteAngle > playerAngleToCenter && playerAngleToCenter > hourAngle;
+	}
+	else
+	{
+		collision = minuteAngle > playerAngleToCenter || playerAngleToCenter > hourAngle;
+	}
 
-  timeSinceEvilZoneTick += GetFrameTime();
+	timeSinceEvilZoneTick += GetFrameTime();
 
-  if (collision)
-  {
-      if (timeSinceEvilZoneTick >= 3.0f)
-      {
-          player.Hurt(40, D_EvilZone);
-          timeSinceEvilZoneTick = 0;
-      }
-      else if (timeSinceEvilZoneTick >= 1.0f)
-      {
-          player.Hurt(5, D_EvilZone);
-          timeSinceEvilZoneTick = 0;
-      }
-  }
+	if (collision)
+	{
+		if (timeSinceEvilZoneTick >= 3.0f)
+		{
+			player.Hurt(40, D_EvilZone);
+			timeSinceEvilZoneTick = 0;
+		}
+		else if (timeSinceEvilZoneTick >= 1.0f)
+		{
+			player.Hurt(5, D_EvilZone);
+			timeSinceEvilZoneTick = 0;
+		}
+	}
 
 	if (enemy.GetHealth() <= 0)
 	{
@@ -130,7 +129,7 @@ void PlayMode::Draw()
 	ArenaManager::DrawLevelGrid();
 
 	DrawRedLightGreenLight();
-  DrawEvilZone();
+	DrawEvilZone();
 
 	ArenaManager::MaskOutsideOctagon();
 	ArenaManager::DrawOctagonBoundary();
@@ -154,15 +153,17 @@ void PlayMode::Draw()
 	DrawText(TextFormat("Chase: %d/%d", enemy.GetChaseMovesTaken(), enemy.GetChaseBudget()), 20, 90, 20, WHITE);
 	DrawText(TextFormat("Punches: %d/%d", enemy.GetNormalAttackCount(), enemy.GetNormalAttacksPerCycle()), 20, 110, 20,
 			 WHITE);
-  DrawText(TextFormat("Hour Angle: %f", Utils::NormalizeAngle(hourHand.GetAngle())), 20, 140, 20, WHITE);
-  DrawText(TextFormat("Minute Angle: %f", Utils::NormalizeAngle(minuteHand.GetAngle())), 20, 170, 20, WHITE);
-  DrawText(TextFormat("Player Angle: %f", Utils::NormalizeAngle(Utils::Vector2ToAngle(Vector2Normalize(Vector2Subtract(player.GetPosition(),minuteHand.GetPosition()))))), 20, 200, 20, WHITE);
+	DrawText(TextFormat("Hour Angle: %f", Utils::NormalizeAngle(hourHand.GetAngle())), 20, 140, 20, WHITE);
+	DrawText(TextFormat("Minute Angle: %f", Utils::NormalizeAngle(minuteHand.GetAngle())), 20, 170, 20, WHITE);
+	DrawText(TextFormat("Player Angle: %f", Utils::NormalizeAngle(Utils::Vector2ToAngle(Vector2Normalize(
+												Vector2Subtract(player.GetPosition(), minuteHand.GetPosition()))))),
+			 20, 200, 20, WHITE);
 #endif
 }
 
-void PlayMode::EnemyHit(float damage) 
+void PlayMode::EnemyHit(float damage)
 {
-  enemy.Hurt(damage);
+	enemy.Hurt(damage);
 	UpdateBossPhaseFromHealth();
 }
 
@@ -200,8 +201,7 @@ void PlayMode::BeginGameOver()
 
 void PlayMode::UpdateBossPhaseFromHealth()
 {
-	const float healthPercent =
-		enemy.GetMaxHealth() > 0 ? enemy.GetHealth() / (float)enemy.GetMaxHealth() : 0.0f;
+	const float healthPercent = enemy.GetMaxHealth() > 0 ? enemy.GetHealth() / (float)enemy.GetMaxHealth() : 0.0f;
 
 	int nextPhase = 0;
 	if (healthPercent <= 0.25f)
@@ -286,7 +286,7 @@ void PlayMode::UpdateRedLightGreenLight(float deltaTime)
 
 	if (redLightDamageCooldown <= 0.0f && IsPlayerOnActiveRedLightCell())
 	{
-		player.Hurt(RED_LIGHT_DAMAGE);
+		player.Hurt(RED_LIGHT_DAMAGE, D_EvilZone);
 		redLightDamageCooldown = RED_LIGHT_DAMAGE_INTERVAL;
 	}
 
@@ -308,7 +308,7 @@ void PlayMode::DrawRedLightGreenLight()
 	if (redLightGreenLightTimer > RED_LIGHT_APPLY_DURATION)
 	{
 		fade = 1.0f - (redLightGreenLightTimer - RED_LIGHT_APPLY_DURATION) /
-							 (RED_LIGHT_TOTAL_DURATION - RED_LIGHT_APPLY_DURATION);
+						  (RED_LIGHT_TOTAL_DURATION - RED_LIGHT_APPLY_DURATION);
 		fade = std::clamp(fade, 0.0f, 1.0f);
 	}
 
@@ -351,7 +351,8 @@ void PlayMode::QueueRedLightCells()
 	while (cellsQueued < RED_LIGHT_CELLS_PER_WAVE && attempts < 100)
 	{
 		attempts++;
-		const Vector2 candidate = Vector2{(float)GetRandomValue(0, CELL_COUNT - 1), (float)GetRandomValue(0, CELL_COUNT - 1)};
+		const Vector2 candidate =
+			Vector2{(float)GetRandomValue(0, CELL_COUNT - 1), (float)GetRandomValue(0, CELL_COUNT - 1)};
 
 		if (!ArenaManager::IsValidGridPosition(ArenaManager::GridPositionToWorld(candidate)) ||
 			enemy.OccupiesGridPosition(candidate) || IsRedLightCellQueued(candidate))
@@ -392,21 +393,22 @@ bool PlayMode::IsPlayerOnActiveRedLightCell() const
 
 void PlayMode::DrawEvilZone()
 {
-  if (minuteHand.activated == false) return;
+	if (minuteHand.activated == false)
+		return;
 
-  float hourAngle   = Utils::NormalizeAngle(hourHand.GetAngle());
-  float minuteAngle = Utils::NormalizeAngle(minuteHand.GetAngle());
-  Color red = Color(255, 0, 0, 128);
+	float hourAngle = Utils::NormalizeAngle(hourHand.GetAngle());
+	float minuteAngle = Utils::NormalizeAngle(minuteHand.GetAngle());
+	Color red = Color(255, 0, 0, 128);
 
-  if (hourAngle <= minuteAngle)
-  {
-      // Simple case: no wrap
-      DrawCircleSector(minuteHand.GetPosition(), 1000, hourAngle, minuteAngle, 1, red);
-  }
-  else
-  {
-      // Wrapping case: draw from hourAngle to 360, then 0 to minuteAngle
-      DrawCircleSector(minuteHand.GetPosition(), 1000, hourAngle,   360.0f,    1, red);
-      DrawCircleSector(minuteHand.GetPosition(), 1000, 0.0f,        minuteAngle, 1, red);
-  }
+	if (hourAngle <= minuteAngle)
+	{
+		// Simple case: no wrap
+		DrawCircleSector(minuteHand.GetPosition(), 1000, hourAngle, minuteAngle, 1, red);
+	}
+	else
+	{
+		// Wrapping case: draw from hourAngle to 360, then 0 to minuteAngle
+		DrawCircleSector(minuteHand.GetPosition(), 1000, hourAngle, 360.0f, 1, red);
+		DrawCircleSector(minuteHand.GetPosition(), 1000, 0.0f, minuteAngle, 1, red);
+	}
 }

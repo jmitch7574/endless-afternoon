@@ -1,26 +1,20 @@
 #include "arena_manager.h"
 #include "entities/enemy.h"
-#include "keybinds.h"
 #include "entities/player.h"
+#include "keybinds.h"
+#include "raylib-cpp.hpp"
 #include "scene.h"
+#include "utils.h"
 #include <algorithm>
 #include <cmath>
-#include "raylib-cpp.hpp"
-#include "utils.h"
 
 namespace
 {
 constexpr int ARENA_CENTER_GRID = CELL_COUNT / 2;
 
-int GridX(Vector2 gridPosition)
-{
-	return (int)gridPosition.x;
-}
+int GridX(Vector2 gridPosition) { return (int)gridPosition.x; }
 
-int GridY(Vector2 gridPosition)
-{
-	return (int)gridPosition.y;
-}
+int GridY(Vector2 gridPosition) { return (int)gridPosition.y; }
 
 bool IsEnemyBlockingGridPosition(Vector2 gridPosition)
 {
@@ -58,15 +52,9 @@ Vector2 NormalizeGridDirection(Vector2 direction)
 	return normalizedDirection;
 }
 
-bool IsZeroDirection(Vector2 direction)
-{
-	return direction.x == 0.0f && direction.y == 0.0f;
-}
+bool IsZeroDirection(Vector2 direction) { return direction.x == 0.0f && direction.y == 0.0f; }
 
-bool IsSameDirection(Vector2 a, Vector2 b)
-{
-	return (int)a.x == (int)b.x && (int)a.y == (int)b.y;
-}
+bool IsSameDirection(Vector2 a, Vector2 b) { return (int)a.x == (int)b.x && (int)a.y == (int)b.y; }
 
 Vector2 GetHeldMovementDirection()
 {
@@ -170,32 +158,31 @@ Vector2 GetBoundaryAssistDirection(Vector2 playerGridPosition, Vector2 inputDir)
 }
 } // namespace
 
-
 Player::Player(raylib::Vector2 startPos) : Entity(startPos)
 {
-  health = 100;
+	health = 100;
 	gridPosition = startPos;
 	position = ArenaManager::GridPositionToWorld(gridPosition);
 }
 
 Player::~Player(void) {}
 
-bool Player::IsInvulnerable() const { return dashInvulnerabilityTimer > 0.0f; }
+bool Player::IsInvulnerable() { return dashInvulnerabilityTimer > 0.0f; }
 
 void Player::Update()
 {
 
-  movedThisFrame = false;
-  attackedThisFrame = false;
-  dashedThisFrame = false;
-  
+	movedThisFrame = false;
+	attackedThisFrame = false;
+	dashedThisFrame = false;
+
 	// Lerp Entity Position to Grid Position
 	position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
 	const float deltaTime = GetFrameTime();
 	currentMoveCooldown -= deltaTime;
 	dashCooldownTimer -= deltaTime;
 	dashInvulnerabilityTimer -= deltaTime;
-  hitAnimationTime += deltaTime;
+	hitAnimationTime += deltaTime;
 
 	if (HasPressedMovementKey())
 	{
@@ -231,18 +218,18 @@ void Player::Update()
 			TryMove(Vector2(0, 1));
 	}
 
-  if (movedThisFrame && !dashedThisFrame) 
-  {
-    currentMoveCooldown = moveCooldown;
-  }
-  if (dashedThisFrame)
-  {
-    currentMoveCooldown = 0.0f;
-  }
-  if (attackedThisFrame)
-  {
-    currentMoveCooldown = moveCooldown * 3;
-  }
+	if (movedThisFrame && !dashedThisFrame)
+	{
+		currentMoveCooldown = moveCooldown;
+	}
+	if (dashedThisFrame)
+	{
+		currentMoveCooldown = 0.0f;
+	}
+	if (attackedThisFrame)
+	{
+		currentMoveCooldown = moveCooldown * 3;
+	}
 
 	for (int i = 119; i > 0; i--)
 	{
@@ -257,50 +244,44 @@ void Player::Update()
 
 	trail[0] = {position, 255};
 
-  // THE FIST
+	// THE FIST
 
-  
-  float hitAnimationLerp = sinf(3.5f * sqrtf(hitAnimationTime));
-  hitAnimationLerp = std::max(hitAnimationLerp, 0.0f);
+	float hitAnimationLerp = sinf(3.5f * sqrtf(hitAnimationTime));
+	hitAnimationLerp = std::max(hitAnimationLerp, 0.0f);
 
-  Vector2 handStart = Vector2(0, 20);
-  Vector2 handEnd   = Vector2(45, 0);
-  Vector2 ControlOne = Vector2(20, 25);
-  Vector2 ControlTwo = Vector2(45, 10);
+	Vector2 handStart = Vector2(0, 20);
+	Vector2 handEnd = Vector2(45, 0);
+	Vector2 ControlOne = Vector2(20, 25);
+	Vector2 ControlTwo = Vector2(45, 10);
 
-  
+	float threshold = hitAnimationLerp * 20;
 
-  float threshold = hitAnimationLerp * 20;
-  
-  peakThreshold = std::max(threshold, peakThreshold);
+	peakThreshold = std::max(threshold, peakThreshold);
 
-  threshold = std::max(threshold, peakThreshold);
+	threshold = std::max(threshold, peakThreshold);
 
+	if (hitAnimationTime < 1)
+	{
+		handpos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, hitAnimationLerp);
+		if (isPunchFlipped)
+			handpos.y = -handpos.y;
+		float angle = Utils::Vector2ToAngle(currentDirection) * PI / 180.0f;
 
-  if (hitAnimationTime < 1)
-  {
-    handpos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, hitAnimationLerp);
-    if (isPunchFlipped) handpos.y = -handpos.y;
-    float angle = Utils::Vector2ToAngle(currentDirection) * PI / 180.0f;
+		handpos = Vector2Rotate(handpos, angle);
+	}
+	for (int i = 0; i < 20; i++)
+	{
+		if (i >= threshold)
+			continue;
 
-    handpos = Vector2Rotate(handpos, angle);
+		Vector2 trailPos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, (float)i / 20.0f);
+		if (isPunchFlipped)
+			trailPos.y = -trailPos.y;
+		float angle = Utils::Vector2ToAngle(currentDirection) * PI / 180.0f;
+		trailPos = Vector2Rotate(trailPos, angle);
 
-  }
-  for (int i = 0; i < 20; i++)
-  {
-    if (i >= threshold) continue;
-
-    Vector2 trailPos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, (float)i / 20.0f);
-    if (isPunchFlipped) trailPos.y = -trailPos.y;
-    float angle = Utils::Vector2ToAngle(currentDirection) * PI / 180.0f;
-    trailPos = Vector2Rotate(trailPos, angle);
-
-
-    punchTrail[i] = {
-      trailPos,
-      std::max(255 - (int)(hitAnimationTime * (400 - i * 5)), 0)
-    };
-  }
+		punchTrail[i] = {trailPos, std::max(255 - (int)(hitAnimationTime * (400 - i * 5)), 0)};
+	}
 }
 
 void Player::Draw()
@@ -312,68 +293,73 @@ void Player::Draw()
 		DrawCircleV(trail[i].pos, CELL_SIZE / 2.0f, Color{50, 120, 160, (unsigned char)trail[i].opacity});
 	}
 
-  
 	for (int i = 20; i > 0; i--)
 	{
 		if (punchTrail[i].opacity < 0)
 			continue;
 
-		DrawCircleV(position + punchTrail[i].pos, CELL_SIZE / 6.0f, Color{ 102, 191, 255, (unsigned char) punchTrail[i].opacity });
+		DrawCircleV(position + punchTrail[i].pos, CELL_SIZE / 6.0f,
+					Color{102, 191, 255, (unsigned char)punchTrail[i].opacity});
 	}
-  if (hitAnimationTime < 1)
-  {
+	if (hitAnimationTime < 1)
+	{
 
-    DrawCircleV(position + handpos, CELL_SIZE / 6.0f, Color{ 102, 191, 255, (unsigned char)(255 - hitAnimationTime * 255) });
-  }
+		DrawCircleV(position + handpos, CELL_SIZE / 6.0f,
+					Color{102, 191, 255, (unsigned char)(255 - hitAnimationTime * 255)});
+	}
 
 	const Color playerColor = IsInvulnerable() ? Color{170, 235, 255, 255} : SKYBLUE;
 	DrawCircleV(position, CELL_SIZE / 2.0f, playerColor);
 
-  if (hitAnimationTime < 1)
-  {
-    DrawCircleV(position + handpos, CELL_SIZE / 6.0f, playerColor);
-  }
+	if (hitAnimationTime < 1)
+	{
+		DrawCircleV(position + handpos, CELL_SIZE / 6.0f, playerColor);
+	}
 }
 
-void Player::TryMove(Vector2 dir) {
-  if (currentMoveCooldown > 0) return;
-  if (attackedThisFrame) return;
+void Player::TryMove(Vector2 dir)
+{
+	if (currentMoveCooldown > 0)
+		return;
+	if (attackedThisFrame)
+		return;
 
-  Vector2 moveDir = dir;
-  Vector2 cornerAssistDir = GetBoundaryAssistDirection(gridPosition, dir);
-  if (!Vector2Equals(cornerAssistDir, dir) && IsWalkableGridPosition(Vector2Add(gridPosition, cornerAssistDir)))
-  {
-    moveDir = cornerAssistDir;
-  }
+	Vector2 moveDir = dir;
+	Vector2 cornerAssistDir = GetBoundaryAssistDirection(gridPosition, dir);
+	if (!Vector2Equals(cornerAssistDir, dir) && IsWalkableGridPosition(Vector2Add(gridPosition, cornerAssistDir)))
+	{
+		moveDir = cornerAssistDir;
+	}
 
-  Vector2 nextGridPosition = Vector2Add(gridPosition, moveDir);
-  Vector2 hypotheticalWorldPos = ArenaManager::GridPositionToWorld(nextGridPosition);
+	Vector2 nextGridPosition = Vector2Add(gridPosition, moveDir);
+	Vector2 hypotheticalWorldPos = ArenaManager::GridPositionToWorld(nextGridPosition);
 
-  if (!ArenaManager::IsValidGridPosition(hypotheticalWorldPos)) return;
+	if (!ArenaManager::IsValidGridPosition(hypotheticalWorldPos))
+		return;
 
-  movedThisFrame = true;
+	movedThisFrame = true;
 
-  bool enemyCollide = IsEnemyBlockingGridPosition(nextGridPosition);
-  
-  if (enemyCollide){
-    // Successful Attack
-    attackedThisFrame = true;
-    
-    hitAnimationTime = 0;
-    currentDirection = moveDir;
+	bool enemyCollide = IsEnemyBlockingGridPosition(nextGridPosition);
 
-    peakThreshold = 0;
+	if (enemyCollide)
+	{
+		// Successful Attack
+		attackedThisFrame = true;
 
-    playScene->EnemyHit(25.0f);
+		hitAnimationTime = 0;
+		currentDirection = moveDir;
 
-    isPunchFlipped = GetRandomValue(0, 1) == 1; 
+		peakThreshold = 0;
 
-    return;
-  }
+		playScene->EnemyHit(25.0f);
 
-  gridPosition = nextGridPosition;
-  currentDirection = moveDir;
-  
+		isPunchFlipped = GetRandomValue(0, 1) == 1;
+
+		return;
+	}
+
+	gridPosition = nextGridPosition;
+	currentDirection = moveDir;
 }
 
 void Player::TryDash(Vector2 dir)
@@ -474,17 +460,14 @@ void Player::TryDash(Vector2 dir)
 	dashInvulnerabilityTimer = dashInvulnerabilityDuration;
 }
 
-void Player::Hurt(float amount, DamageType type) 
+void Player::Hurt(float amount, DamageType damageType)
 {
-  if (IsInvulnerable() && type != D_EvilZone)
-  {
-    return;
-  }
+	if (IsInvulnerable() && damageType != D_EvilZone)
+	{
+		return;
+	}
 
-  health = std::max(0.0f, health - amount);
+	health = std::max(0.0f, health - amount);
 }
 
-void Player::Knockback(Vector2 Knockback) 
-{
-  
-}
+void Player::Knockback(Vector2 Knockback) {}

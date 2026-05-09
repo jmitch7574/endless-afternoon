@@ -21,7 +21,7 @@ void Enemy::PrimaryAttack()
 
 	if (hit && playScene != nullptr)
 	{
-		playScene->player.Hurt(BASIC_ATTACK_DAMAGE);
+		playScene->player.Hurt(BASIC_ATTACK_DAMAGE, D_Enemy);
 	}
 
 	normalAttackCount++;
@@ -45,7 +45,7 @@ void Enemy::SecondaryAttack(float deltaTime)
 
 		if (playScene != nullptr)
 		{
-			playScene->player.Hurt(SECONDARY_ATTACK_DAMAGE);
+			playScene->player.Hurt(SECONDARY_ATTACK_DAMAGE, D_Enemy);
 		}
 	}
 

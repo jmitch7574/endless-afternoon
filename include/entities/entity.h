@@ -17,3 +17,9 @@ class Entity
 	virtual void Update() = 0;
 	virtual void Draw() = 0;
 };
+
+typedef enum DamageType
+{
+	D_Enemy,
+	D_EvilZone
+} DamageType;

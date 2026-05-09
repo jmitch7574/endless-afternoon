@@ -19,9 +19,9 @@ class Player : public Entity
 
 	void Update() override;
 	void Draw() override;
-	bool IsInvulnerable() const;
+	bool IsInvulnerable();
 
-	void Hurt(float amount);
+	void Hurt(float amount, DamageType damageType);
 	void Knockback(Vector2 Knockback);
 
 	Vector2 gridPosition;
