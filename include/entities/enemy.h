@@ -53,8 +53,8 @@ class Enemy : public Entity
 	static constexpr int CLOCK_HAND_TRAIL_SAMPLES = 14;
 	static constexpr float CLOCK_HAND_TRAIL_STEP = 0.02f;
 	static constexpr int SECONDARY_PULSE_SEGMENTS = 96;
-	static constexpr float BASIC_ATTACK_DAMAGE = 20.0f;
-	static constexpr float SECONDARY_ATTACK_DAMAGE = 30.0f;
+	static constexpr float BASIC_ATTACK_DAMAGE = 15.0f;
+	static constexpr float SECONDARY_ATTACK_DAMAGE = 20.0f;
 
 	// State flow
 	void EnterState(EnemyState nextState);
@@ -142,7 +142,7 @@ class Enemy : public Entity
 	int nextSecondaryAttack = 1;
 	float spinningSecondaryAttackDuration = 5.0f;
 	float spinningSecondarySpinAngle = 0.0f;
-	float spinningSecondarySpinSpeed = 380.0f;
+	float spinningSecondarySpinSpeed = 680.0f;
 	float spinningSecondaryDamageCooldown = 0.0f;
 	float spinningSecondaryDamageInterval = 0.55f;
 	int spinningSecondarySpinDirection = 1;

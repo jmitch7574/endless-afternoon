@@ -10,13 +10,19 @@
 
 namespace
 {
-constexpr float RED_LIGHT_TOTAL_DURATION = 10.0f;
-constexpr float RED_LIGHT_APPLY_DURATION = 5.0f;
-constexpr float RED_LIGHT_TELEGRAPH_DURATION = 1.0f;
-constexpr float RED_LIGHT_WAVE_INTERVAL = 0.55f;
-constexpr float RED_LIGHT_DAMAGE_INTERVAL = 0.5f;
+constexpr float RED_LIGHT_TOTAL_DURATION = 11.5f;
+constexpr float RED_LIGHT_APPLY_DURATION = 7.0f;
+constexpr float RED_LIGHT_TELEGRAPH_DURATION = 0.9f;
+constexpr float RED_LIGHT_ACTIVE_DURATION = 3.2f;
+constexpr float RED_LIGHT_FADE_DURATION = 1.8f;
+constexpr float RED_LIGHT_WAVE_INTERVAL = 0.45f;
+constexpr float RED_LIGHT_PLAYER_TARGET_INTERVAL = 1.35f;
+constexpr float RED_LIGHT_DAMAGE_INTERVAL = 1.0f;
 constexpr float RED_LIGHT_DAMAGE = 5.0f;
-constexpr int RED_LIGHT_CELLS_PER_WAVE = 5;
+constexpr float EVIL_ZONE_DAMAGE_INTERVAL = 1.0f;
+constexpr float EVIL_ZONE_DAMAGE = 5.0f;
+constexpr float MOVING_CLOCK_HAND_IMPACT_DAMAGE = 20.0f;
+constexpr int RED_LIGHT_CELLS_PER_WAVE = 7;
 
 bool IsSameGridCell(Vector2 a, Vector2 b) { return (int)a.x == (int)b.x && (int)a.y == (int)b.y; }
 
@@ -78,41 +84,8 @@ void PlayMode::Update()
 	minuteHand.Update();
 	hourHand.Update();
 	UpdateRedLightGreenLight(GetFrameTime());
-
-	// Special Check - Is the player in the evil zone
-
-	float playerAngleToCenter = Utils::NormalizeAngle(
-		Utils::Vector2ToAngle(Vector2Normalize(Vector2Subtract(player.GetPosition(), minuteHand.GetPosition()))));
-
-	float hourAngle = Utils::NormalizeAngle(hourHand.GetAngle());
-	float minuteAngle = Utils::NormalizeAngle(minuteHand.GetAngle());
-
-	bool collision;
-
-	if (hourAngle <= minuteAngle)
-	{
-		collision = minuteAngle > playerAngleToCenter && playerAngleToCenter > hourAngle;
-	}
-	else
-	{
-		collision = minuteAngle > playerAngleToCenter || playerAngleToCenter > hourAngle;
-	}
-
-	timeSinceEvilZoneTick += GetFrameTime();
-
-	if (collision)
-	{
-		if (timeSinceEvilZoneTick >= 3.0f)
-		{
-			player.Hurt(40, D_EvilZone);
-			timeSinceEvilZoneTick = 0;
-		}
-		else if (timeSinceEvilZoneTick >= 1.0f)
-		{
-			player.Hurt(5, D_EvilZone);
-			timeSinceEvilZoneTick = 0;
-		}
-	}
+	UpdateEvilZone(GetFrameTime());
+	UpdateMovingClockHandImpact();
 
 	if (enemy.GetHealth() <= 0)
 	{
@@ -122,7 +95,7 @@ void PlayMode::Update()
 	{
 		BeginGameOver();
 	}
-	
+
 	dangerEffects.Update();
 }
 void PlayMode::Draw()
@@ -174,7 +147,9 @@ void PlayMode::StartRedLightGreenLight()
 	redLightGreenLightActive = true;
 	redLightGreenLightTimer = 0.0f;
 	redLightNextWaveTimer = 0.0f;
+	redLightPlayerTargetTimer = 0.0f;
 	redLightDamageCooldown = 0.0f;
+	redLightWaveCount = 0;
 	redLightCells.clear();
 }
 
@@ -199,6 +174,75 @@ void PlayMode::BeginGameOver()
 
 	gameOverTriggered = true;
 	resultTransitionTimer = 0.6f;
+}
+
+void PlayMode::UpdateEvilZone(float deltaTime)
+{
+	if (!minuteHand.activated)
+	{
+		timeSinceEvilZoneTick = 0.0f;
+		return;
+	}
+
+	const Vector2 playerOffset = Vector2Subtract(player.GetPosition(), minuteHand.GetPosition());
+	if (Vector2Length(playerOffset) <= 0.0f)
+	{
+		return;
+	}
+
+	const float playerAngleToCenter = Utils::NormalizeAngle(Utils::Vector2ToAngle(Vector2Normalize(playerOffset)));
+	const float hourAngle = Utils::NormalizeAngle(hourHand.GetAngle());
+	const float minuteAngle = Utils::NormalizeAngle(minuteHand.GetAngle());
+	bool collision = false;
+
+	if (hourAngle <= minuteAngle)
+	{
+		collision = minuteAngle > playerAngleToCenter && playerAngleToCenter > hourAngle;
+	}
+	else
+	{
+		collision = minuteAngle > playerAngleToCenter || playerAngleToCenter > hourAngle;
+	}
+
+	if (!collision)
+	{
+		timeSinceEvilZoneTick = 0.0f;
+		return;
+	}
+
+	timeSinceEvilZoneTick += deltaTime;
+	if (timeSinceEvilZoneTick >= EVIL_ZONE_DAMAGE_INTERVAL)
+	{
+		player.Hurt(EVIL_ZONE_DAMAGE, D_EvilZone);
+		timeSinceEvilZoneTick -= EVIL_ZONE_DAMAGE_INTERVAL;
+	}
+}
+
+void PlayMode::UpdateMovingClockHandImpact()
+{
+	const float playerRadius = CELL_SIZE * 0.5f;
+	bool touchingMovingHand = false;
+
+	if (minuteHand.IsMoving())
+	{
+		touchingMovingHand = touchingMovingHand ||
+							 Utils::LineIntersectsCircle(minuteHand.GetPosition(), minuteHand.GetLargeExtendedPoint(),
+														 player.GetPosition(), playerRadius);
+	}
+
+	if (hourHand.IsMoving())
+	{
+		touchingMovingHand = touchingMovingHand ||
+							 Utils::LineIntersectsCircle(hourHand.GetPosition(), hourHand.GetLargeExtendedPoint(),
+														 player.GetPosition(), playerRadius);
+	}
+
+	if (touchingMovingHand && !playerTouchingMovingClockHand)
+	{
+		player.Hurt(MOVING_CLOCK_HAND_IMPACT_DAMAGE, D_EvilZone);
+	}
+
+	playerTouchingMovingClockHand = touchingMovingHand;
 }
 
 void PlayMode::UpdateBossPhaseFromHealth()
@@ -266,9 +310,10 @@ void PlayMode::UpdateRedLightGreenLight(float deltaTime)
 	}
 
 	redLightGreenLightTimer += deltaTime;
+	redLightPlayerTargetTimer -= deltaTime;
 	redLightDamageCooldown -= deltaTime;
 
-	if (redLightGreenLightTimer <= RED_LIGHT_APPLY_DURATION - RED_LIGHT_TELEGRAPH_DURATION)
+	if (redLightGreenLightTimer <= RED_LIGHT_APPLY_DURATION)
 	{
 		redLightNextWaveTimer -= deltaTime;
 		if (redLightNextWaveTimer <= 0.0f)
@@ -278,13 +323,35 @@ void PlayMode::UpdateRedLightGreenLight(float deltaTime)
 		}
 	}
 
+	if (redLightGreenLightTimer <= RED_LIGHT_APPLY_DURATION && redLightPlayerTargetTimer <= 0.0f)
+	{
+		QueueRedLightCell(player.gridPosition);
+		redLightPlayerTargetTimer = RED_LIGHT_PLAYER_TARGET_INTERVAL;
+	}
+
 	for (RedLightCell &cell : redLightCells)
 	{
 		if (cell.telegraphTimer > 0.0f)
 		{
 			cell.telegraphTimer -= deltaTime;
 		}
+		else if (cell.activeTimer > 0.0f)
+		{
+			cell.activeTimer -= deltaTime;
+		}
+		else
+		{
+			cell.fadeTimer -= deltaTime;
+		}
 	}
+
+	redLightCells.erase(std::remove_if(redLightCells.begin(), redLightCells.end(),
+									   [](const RedLightCell &cell)
+									   {
+										   return cell.telegraphTimer <= 0.0f && cell.activeTimer <= 0.0f &&
+												  cell.fadeTimer <= 0.0f;
+									   }),
+						redLightCells.end());
 
 	if (redLightDamageCooldown <= 0.0f && IsPlayerOnActiveRedLightCell())
 	{
@@ -292,7 +359,7 @@ void PlayMode::UpdateRedLightGreenLight(float deltaTime)
 		redLightDamageCooldown = RED_LIGHT_DAMAGE_INTERVAL;
 	}
 
-	if (redLightGreenLightTimer >= RED_LIGHT_TOTAL_DURATION)
+	if (redLightGreenLightTimer >= RED_LIGHT_TOTAL_DURATION && redLightCells.empty())
 	{
 		redLightGreenLightActive = false;
 		redLightCells.clear();
@@ -306,13 +373,11 @@ void PlayMode::DrawRedLightGreenLight()
 		return;
 	}
 
-	float fade = 1.0f;
-	if (redLightGreenLightTimer > RED_LIGHT_APPLY_DURATION)
-	{
-		fade = 1.0f - (redLightGreenLightTimer - RED_LIGHT_APPLY_DURATION) /
-						  (RED_LIGHT_TOTAL_DURATION - RED_LIGHT_APPLY_DURATION);
-		fade = std::clamp(fade, 0.0f, 1.0f);
-	}
+	const float arenaFade =
+		redLightGreenLightTimer <= RED_LIGHT_TOTAL_DURATION
+			? 1.0f
+			: std::clamp(1.0f - (redLightGreenLightTimer - RED_LIGHT_TOTAL_DURATION) / RED_LIGHT_FADE_DURATION, 0.0f,
+						 1.0f);
 
 	for (int x = 0; x < CELL_COUNT; x++)
 	{
@@ -324,7 +389,7 @@ void PlayMode::DrawRedLightGreenLight()
 				continue;
 			}
 
-			DrawRectangleRec(GridCellBounds(gridPosition), Color{35, 175, 95, (unsigned char)(58 * fade)});
+			DrawRectangleRec(GridCellBounds(gridPosition), Color{35, 175, 95, (unsigned char)(58 * arenaFade)});
 		}
 	}
 
@@ -334,21 +399,62 @@ void PlayMode::DrawRedLightGreenLight()
 		if (cell.telegraphTimer > 0.0f)
 		{
 			const float pulse = 0.45f + 0.55f * sinf((float)GetTime() * 12.0f);
-			DrawRectangleRec(bounds, Color{255, 188, 48, (unsigned char)((80 + 90 * pulse) * fade)});
-			DrawRectangleLinesEx(bounds, 3.0f, Color{255, 70, 52, (unsigned char)(230 * fade)});
+			DrawRectangleRec(bounds, Color{255, 188, 48, (unsigned char)(80 + 90 * pulse)});
+			DrawRectangleLinesEx(bounds, 3.0f, Color{255, 70, 52, 230});
+		}
+		else if (cell.activeTimer > 0.0f)
+		{
+			DrawRectangleRec(bounds, Color{220, 42, 38, 190});
+			DrawRectangleLinesEx(bounds, 2.0f, Color{255, 228, 210, 95});
 		}
 		else
 		{
-			DrawRectangleRec(bounds, Color{220, 42, 38, (unsigned char)(185 * fade)});
-			DrawRectangleLinesEx(bounds, 2.0f, Color{255, 228, 210, (unsigned char)(90 * fade)});
+			const float fade = std::clamp(cell.fadeTimer / RED_LIGHT_FADE_DURATION, 0.0f, 1.0f);
+			DrawRectangleRec(bounds, Color{220, 42, 38, (unsigned char)(135 * fade)});
+			DrawRectangleLinesEx(bounds, 2.0f, Color{255, 228, 210, (unsigned char)(70 * fade)});
 		}
 	}
 }
 
 void PlayMode::QueueRedLightCells()
 {
+	redLightWaveCount++;
 	int cellsQueued = 0;
 	int attempts = 0;
+	const int pattern = redLightWaveCount % 3;
+
+	if (pattern == 0)
+	{
+		const bool horizontal = GetRandomValue(0, 1) == 0;
+		for (int offset = -3; offset <= 3; offset++)
+		{
+			const Vector2 candidate = horizontal ? Vector2{player.gridPosition.x + (float)offset, player.gridPosition.y}
+												: Vector2{player.gridPosition.x, player.gridPosition.y + (float)offset};
+			const int beforeCount = (int)redLightCells.size();
+			QueueRedLightCell(candidate);
+			if ((int)redLightCells.size() > beforeCount)
+			{
+				cellsQueued++;
+			}
+		}
+	}
+	else if (pattern == 1)
+	{
+		const Vector2 center =
+			Vector2{player.gridPosition.x + (float)GetRandomValue(-3, 3), player.gridPosition.y + (float)GetRandomValue(-3, 3)};
+		const Vector2 offsets[] = {Vector2{0, 0}, Vector2{1, 0}, Vector2{-1, 0}, Vector2{0, 1}, Vector2{0, -1},
+								   Vector2{1, 1}, Vector2{-1, -1}};
+
+		for (const Vector2 &offset : offsets)
+		{
+			const int beforeCount = (int)redLightCells.size();
+			QueueRedLightCell(Vector2Add(center, offset));
+			if ((int)redLightCells.size() > beforeCount)
+			{
+				cellsQueued++;
+			}
+		}
+	}
 
 	while (cellsQueued < RED_LIGHT_CELLS_PER_WAVE && attempts < 100)
 	{
@@ -356,15 +462,25 @@ void PlayMode::QueueRedLightCells()
 		const Vector2 candidate =
 			Vector2{(float)GetRandomValue(0, CELL_COUNT - 1), (float)GetRandomValue(0, CELL_COUNT - 1)};
 
-		if (!ArenaManager::IsValidGridPosition(ArenaManager::GridPositionToWorld(candidate)) ||
-			enemy.OccupiesGridPosition(candidate) || IsRedLightCellQueued(candidate))
+		const int beforeCount = (int)redLightCells.size();
+		QueueRedLightCell(candidate);
+		if ((int)redLightCells.size() > beforeCount)
 		{
-			continue;
+			cellsQueued++;
 		}
-
-		redLightCells.push_back(RedLightCell{candidate, RED_LIGHT_TELEGRAPH_DURATION});
-		cellsQueued++;
 	}
+}
+
+void PlayMode::QueueRedLightCell(Vector2 gridPosition)
+{
+	if (!ArenaManager::IsValidGridPosition(ArenaManager::GridPositionToWorld(gridPosition)) ||
+		enemy.OccupiesGridPosition(gridPosition) || IsRedLightCellQueued(gridPosition))
+	{
+		return;
+	}
+
+	redLightCells.push_back(
+		RedLightCell{gridPosition, RED_LIGHT_TELEGRAPH_DURATION, RED_LIGHT_ACTIVE_DURATION, RED_LIGHT_FADE_DURATION});
 }
 
 bool PlayMode::IsRedLightCellQueued(Vector2 gridPosition) const
@@ -384,7 +500,8 @@ bool PlayMode::IsPlayerOnActiveRedLightCell() const
 {
 	for (const RedLightCell &cell : redLightCells)
 	{
-		if (cell.telegraphTimer <= 0.0f && IsSameGridCell(cell.gridPosition, player.gridPosition))
+		if (cell.telegraphTimer <= 0.0f && cell.activeTimer > 0.0f &&
+			IsSameGridCell(cell.gridPosition, player.gridPosition))
 		{
 			return true;
 		}

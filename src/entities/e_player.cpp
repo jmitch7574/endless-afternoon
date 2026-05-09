@@ -332,7 +332,7 @@ void Player::TryAttack(Vector2 dir)
 
 	if (playScene != nullptr && IsEnemyBlockingGridPosition(Vector2Add(gridPosition, attackDir)))
 	{
-		playScene->EnemyHit(25.0f);
+		playScene->EnemyHit(10.0f);
 	}
 }
 
@@ -426,7 +426,7 @@ void Player::TryDash(Vector2 dir)
 	currentDirection = dashDir;
 	if (hitEnemy && playScene != nullptr)
 	{
-		playScene->EnemyHit(50.0f);
+		playScene->EnemyHit(15.0f);
 	}
 	movedThisFrame = true;
 	dashedThisFrame = true;

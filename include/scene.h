@@ -3,7 +3,7 @@
 #include "entities/clockhand.h"
 #include "entities/enemy.h"
 #include "entities/player.h"
-#include "danger_effects.h"
+#include <vector>
 
 class Scene
 {
@@ -60,7 +60,7 @@ class PlayMode : public Scene
 
 	Player player;
 	bool isPlayerInEvilZone = false;
-	float timeSinceEvilZoneTick = 100;
+	float timeSinceEvilZoneTick = 0;
 
 	Enemy enemy;
 	ClockHand minuteHand;
@@ -72,14 +72,19 @@ class PlayMode : public Scene
 	{
 		Vector2 gridPosition;
 		float telegraphTimer;
+		float activeTimer;
+		float fadeTimer;
 	};
 
 	void BeginVictory();
 	void BeginGameOver();
 	void UpdateBossPhaseFromHealth();
+	void UpdateEvilZone(float deltaTime);
+	void UpdateMovingClockHandImpact();
 	void UpdateRedLightGreenLight(float deltaTime);
 	void DrawRedLightGreenLight();
 	void QueueRedLightCells();
+	void QueueRedLightCell(Vector2 gridPosition);
 	bool IsRedLightCellQueued(Vector2 gridPosition) const;
 	bool IsPlayerOnActiveRedLightCell() const;
 
@@ -87,10 +92,13 @@ class PlayMode : public Scene
 	bool gameOverTriggered = false;
 	float resultTransitionTimer = 0.0f;
 	int bossHealthPhase = 0;
+	bool playerTouchingMovingClockHand = false;
 	bool redLightGreenLightActive = false;
 	float redLightGreenLightTimer = 0.0f;
 	float redLightNextWaveTimer = 0.0f;
+	float redLightPlayerTargetTimer = 0.0f;
 	float redLightDamageCooldown = 0.0f;
+	int redLightWaveCount = 0;
 	std::vector<RedLightCell> redLightCells;
 };
 

@@ -66,4 +66,6 @@ Vector2 ClockHand::GetLargeExtendedPoint()
 	return Vector2Add(position, Vector2Scale(Utils::AngleToVector2(GetAngle()), 10000));
 }
 
+bool ClockHand::IsMoving() const { return isAdvancing || inBigDeadlySpin; }
+
 float ClockHand::GetAngle() { return fmod(angleDeg + bigDeadlySpinTime * bigDeadlySpinCoefficient, 360.0f); }

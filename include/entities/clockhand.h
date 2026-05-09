@@ -14,6 +14,7 @@ class ClockHand : public Entity
 	void Advance();
 	void BeginBigDeadlySpin();
 	Vector2 GetLargeExtendedPoint();
+	bool IsMoving() const;
 
 	bool activated = false;
 

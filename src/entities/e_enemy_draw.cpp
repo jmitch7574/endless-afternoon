@@ -127,11 +127,12 @@ void Enemy::DrawSpinningSecondaryAttackEffect()
 	}
 	else
 	{
-		for (int i = 8; i > 0; i--)
+		for (int i = 18; i > 0; i--)
 		{
-			const float trailAge = (float)i / 9.0f;
-			const float trailAngle = angle - spinningSecondarySpinDirection * i * 14.0f;
-			const unsigned char trailAlpha = (unsigned char)(95.0f * (1.0f - trailAge));
+			const float trailAge = (float)i / 19.0f;
+			const float trailAngle = angle - spinningSecondarySpinDirection * i * 12.0f;
+			const float blurStrength = (1.0f - trailAge) * (1.0f - trailAge);
+			const unsigned char trailAlpha = (unsigned char)(145.0f * blurStrength);
 			DrawAttackClockHand(position, trailAngle, false, trailAlpha);
 			DrawAttackClockHand(position, trailAngle + 180.0f, true, trailAlpha);
 		}
