@@ -45,7 +45,10 @@ enum class EnemyState
 	Advance,
 	WindUp,
 	Attack,
-	Recover
+	Recover,
+	SecondaryWindUp,
+	SecondaryAttack,
+	SecondaryRecover
 };
 
 class Enemy : public Entity
@@ -80,7 +83,11 @@ class Enemy : public Entity
 	void TriggerPunchEffect();
 	void UpdatePunchEffect(float deltaTime);
 	void DrawPunchEffect();
+	void DrawBasicAttackTelegraph();
+	void DrawSecondaryAttackEffect();
 	Vector2 GetPunchDirectionToTarget() const;
+	int GetNextBasicAttackRange() const;
+	int GetCurrentBasicAttackRange() const;
 
 	// State
 	EnemyState currentState = EnemyState::Idle;
@@ -96,12 +103,22 @@ class Enemy : public Entity
 
 	// WindUp / Attack
 	float stateTimer = 0;
+	float baseAttackWindUpDuration = 1.1f;
 	int attackTargetX = 0;
 	int attackTargetY = 0;
 	float punchAnimationTime = 1000.0f;
-	float punchPeakThreshold = 0.0f;
 	Vector2 punchDirection = Vector2{1.0f, 0.0f};
-	Vector2 punchHandPosition = Vector2{0.0f, 0.0f};
+	float punchHookSide = 1.0f;
+	bool nextBasicAttackIsRightSwing = true;
+	bool currentBasicAttackIsRightSwing = true;
+	int hourHandAttackRange = 1;
+	int minuteHandAttackRange = 2;
+	float secondaryWindUpDuration = 1.4f;
+	float secondaryAttackDuration = 0.9f;
+	float secondaryRecoverDuration = 0.7f;
+	int secondaryAttackRange = 3;
+	bool secondaryAttackHasHit = false;
+	float secondaryPulsePreviousRadius = 0.0f;
 
 	// Attack cycle
 	int normalAttackCount = 0;
