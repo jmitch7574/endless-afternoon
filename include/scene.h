@@ -43,7 +43,13 @@ class PlayMode : public Scene
 	void Update() override;
 	void Draw() override;
 
+  void EnemyHit();
+  void DrawEvilZone();
+
 	Player player;
+  bool isPlayerInEvilZone;
+  float timeSinceEvilZoneTick = 100;
+
 	Enemy enemy;
 	ClockHand minuteHand;
 	ClockHand hourHand;

@@ -9,7 +9,7 @@ void CustomDraws::DrawArrow(Vector2 baseOrigin, Vector2 direction, float length,
   // Main Length
   DrawLineEx(baseOrigin, endPos, thickness, color);
 
-  endPos = Vector2Subtract(endPos, Vector2Scale(direction, thickness / 2));
+  endPos = Vector2Subtract(endPos, Vector2Scale(direction, thickness / 2.5f));
 
 
   Vector2 leftFletchDirection = {
@@ -26,8 +26,6 @@ void CustomDraws::DrawArrow(Vector2 baseOrigin, Vector2 direction, float length,
   
   DrawLineEx(endPos, Vector2Add(endPos, Vector2Scale(leftFletchDirection, fletchLength)), thickness, color);
   DrawLineEx(endPos, Vector2Add(endPos, Vector2Scale(rightFletchDirection, fletchLength)), thickness, color);
-
-
 }
 
 // Rotation of 0 = Vector2.up

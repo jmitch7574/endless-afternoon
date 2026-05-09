@@ -1,11 +1,18 @@
 #pragma once
 #include <raylib-cpp.hpp>
 
+struct PlayerTrail
+{
+	Vector2 pos;
+	int opacity;
+};
+
 class Entity
 {
   protected:
 	raylib::Texture2D texture;
 	raylib::Vector2 position;
+	int health;
 
 	Vector2 gridPosition;
 	float lerpSpeed = 0.2f;
@@ -15,6 +22,8 @@ class Entity
   public:
 	Entity() = default;
 	Entity(raylib::Vector2 startPos) : position(startPos) {}
+	Vector2 GetPosition() { return position; };
+	float GetHealth() { return health; };
 	virtual ~Entity() = default;
 
 	virtual void Update() = 0;
@@ -33,6 +42,10 @@ class Player : public Entity
 	void Update() override;
 	void Draw() override;
 	bool IsInvulnerable() const;
+
+	void Hurt(float amount);
+	void Knockback(Vector2 Knockback);
+
 	Vector2 gridPosition;
 
   protected:
@@ -46,6 +59,17 @@ class Player : public Entity
 	float lastDashTapTime = -1000.0f;
 	Vector2 lastDashTapDirection = Vector2{0.0f, 0.0f};
 	int dashRange = 3;
+
+	PlayerTrail trail[120] = {0};
+	PlayerTrail punchTrail[40] = {0};
+
+	bool dashedThisFrame = false;
+	bool movedThisFrame = false;
+	bool attackedThisFrame = false;
+	float hitAnimationTime = 1000;
+	Vector2 currentDirection = Vector2(1, 0);
+	Vector2 handpos;
+	float peakThreshold = 0;
 };
 
 enum class EnemyState
@@ -138,15 +162,28 @@ class Enemy : public Entity
 class ClockHand : public Entity
 {
   public:
+	float GetAngle();
 	ClockHand(raylib::Vector2 pivot, float angleDeg, float length, float thickness, Color color);
 	~ClockHand(void);
 
 	void Update() override;
 	void Draw() override;
+	void Advance();
+	void BeginBigDeadlySpin();
+	Vector2 GetLargeExtendedPoint();
+
+	bool activated = false;
 
   protected:
 	float angleDeg;
 	float length;
 	float thickness;
 	Color color;
+
+	float bigDeadlySpinTime = 0;
+	float bigDeadlySpinCoefficient = 40;
+	bool inBigDeadlySpin = false;
+
+	float advanceTime = 0;
+	bool isAdvancing = false;
 };
