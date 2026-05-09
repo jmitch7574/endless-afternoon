@@ -2,6 +2,7 @@
 #include "entity.h"
 #include "keybinds.h"
 #include <scene.h>
+#include <algorithm>
 #include <iostream>
 #include "raylib-cpp.hpp"
 #include "utils.h"
@@ -101,6 +102,25 @@ bool IsValidArenaGridPosition(Vector2 gridPosition)
 	return ArenaManager::IsValidGridPosition(ArenaManager::GridPositionToWorld(gridPosition));
 }
 
+bool DashPathHitsEnemy(Vector2 startGridPosition, Vector2 dashDir, int dashRange)
+{
+	for (int step = 1; step <= dashRange; step++)
+	{
+		const Vector2 candidate = Vector2Add(startGridPosition, Vector2Scale(dashDir, (float)step));
+		if (!IsValidArenaGridPosition(candidate))
+		{
+			return false;
+		}
+
+		if (IsEnemyBlockingGridPosition(candidate))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 int DirectionTowardArenaCenter(int gridCoordinate)
 {
 	if (gridCoordinate < ARENA_CENTER_GRID)
@@ -173,6 +193,7 @@ void Player::Update()
 	position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
 	const float deltaTime = GetFrameTime();
 	currentMoveCooldown -= deltaTime;
+	dashCooldownTimer -= deltaTime;
 	dashInvulnerabilityTimer -= deltaTime;
   hitAnimationTime += deltaTime;
 
@@ -181,9 +202,12 @@ void Player::Update()
 	{
 		const Vector2 tapDirection = GetHeldMovementDirection();
 		const float currentTime = (float)GetTime();
-		if (!IsZeroDirection(tapDirection) && currentMoveCooldown <= 0.0f && !attackedThisFrame &&
-			IsSameDirection(tapDirection, lastDashTapDirection) &&
-			currentTime - lastDashTapTime <= dashDoubleTapWindow)
+		const bool dashPathHitsEnemy = DashPathHitsEnemy(gridPosition, tapDirection, dashRange);
+		const bool dashIsReady = dashCooldownTimer <= 0.0f;
+		const bool canDashOnThisBeat = currentMoveCooldown > 0.0f || dashPathHitsEnemy;
+
+		if (!IsZeroDirection(tapDirection) && dashIsReady && canDashOnThisBeat &&
+			IsSameDirection(tapDirection, lastDashTapDirection) && currentTime - lastDashTapTime <= dashDoubleTapWindow)
 		{
 			TryDash(tapDirection);
 			lastDashTapTime = -1000.0f;
@@ -214,7 +238,7 @@ void Player::Update()
   }
   if (dashedThisFrame)
   {
-    currentMoveCooldown = dashCooldown;
+    currentMoveCooldown = 0.0f;
   }
   if (attackedThisFrame)
   {
@@ -339,7 +363,7 @@ void Player::TryMove(Vector2 dir) {
 
     peakThreshold = 0;
 
-    playScene->EnemyHit();
+    playScene->EnemyHit(25.0f);
 
 
     return;
@@ -352,7 +376,7 @@ void Player::TryMove(Vector2 dir) {
 
 void Player::TryDash(Vector2 dir)
 {
-	if (currentMoveCooldown > 0)
+	if (dashCooldownTimer > 0.0f)
 	{
 		return;
 	}
@@ -366,6 +390,8 @@ void Player::TryDash(Vector2 dir)
 	const Vector2 startGridPosition = gridPosition;
 	Vector2 destination = startGridPosition;
 	bool hitEnemy = false;
+	bool foundLandingPastEnemy = false;
+	Vector2 landingPastEnemy = startGridPosition;
 	int enemyHitStep = 0;
 
 	for (int step = 1; step <= dashRange; step++)
@@ -380,6 +406,13 @@ void Player::TryDash(Vector2 dir)
 		{
 			hitEnemy = true;
 			enemyHitStep = step;
+			continue;
+		}
+
+		if (hitEnemy)
+		{
+			landingPastEnemy = candidate;
+			foundLandingPastEnemy = true;
 			break;
 		}
 
@@ -388,9 +421,13 @@ void Player::TryDash(Vector2 dir)
 
 	if (hitEnemy && playScene != nullptr)
 	{
+		destination = foundLandingPastEnemy ? landingPastEnemy : startGridPosition;
 		const Vector2 enemyPushDirection = Vector2Scale(dashDir, -1.0f);
 		if (playScene->enemy.TryPushGridPosition(enemyPushDirection))
 		{
+			Vector2 pushedLanding = startGridPosition;
+			bool foundPushedLanding = false;
+
 			for (int step = enemyHitStep; step <= dashRange; step++)
 			{
 				const Vector2 candidate = Vector2Add(startGridPosition, Vector2Scale(dashDir, (float)step));
@@ -401,9 +438,19 @@ void Player::TryDash(Vector2 dir)
 
 				if (!IsEnemyBlockingGridPosition(candidate))
 				{
-					destination = candidate;
+					pushedLanding = candidate;
+					foundPushedLanding = true;
 					break;
 				}
+			}
+
+			if (foundPushedLanding)
+			{
+				destination = pushedLanding;
+			}
+			else if (foundLandingPastEnemy && !IsEnemyBlockingGridPosition(landingPastEnemy))
+			{
+				destination = landingPastEnemy;
 			}
 		}
 	}
@@ -415,13 +462,23 @@ void Player::TryDash(Vector2 dir)
 
 	gridPosition = destination;
 	currentDirection = dashDir;
+	if (hitEnemy && playScene != nullptr)
+	{
+		playScene->EnemyHit(50.0f);
+	}
 	movedThisFrame = true;
 	dashedThisFrame = true;
+	dashCooldownTimer = dashCooldown;
 	dashInvulnerabilityTimer = dashInvulnerabilityDuration;
 }
 void Player::Hurt(float amount) 
 {
-  health -= amount;
+  if (IsInvulnerable())
+  {
+    return;
+  }
+
+  health = std::max(0, health - (int)amount);
 }
 
 void Player::Knockback(Vector2 Knockback) 

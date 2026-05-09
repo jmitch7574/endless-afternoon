@@ -54,6 +54,7 @@ class Player : public Entity
 	float currentMoveCooldown = 0;
 	float dashDoubleTapWindow = 0.35f;
 	float dashCooldown = 0.65f;
+	float dashCooldownTimer = 0.0f;
 	float dashInvulnerabilityDuration = 0.4f;
 	float dashInvulnerabilityTimer = 0.0f;
 	float lastDashTapTime = -1000.0f;
@@ -103,6 +104,8 @@ class Enemy : public Entity
 	int GetChaseBudget() const;
 	int GetNormalAttackCount() const;
 	int GetNormalAttacksPerCycle() const;
+	int GetMaxHealth() const;
+	void Hurt(float amount);
 	bool OccupiesGridPosition(Vector2 target) const;
 	bool TryPushGridPosition(Vector2 direction);
 
@@ -125,13 +128,13 @@ class Enemy : public Entity
 
 	// State
 	EnemyState currentState = EnemyState::Idle;
+	int maxHealth = 400;
 
 	// Movement
 	Vector2 targetGridPosition;
 	float lerpSpeed = 0.2f;
 	float moveCooldown = 0.5f;
 	float currentMoveCooldown = 0;
-	int aggroRange = 6;
 	int chaseBudget = 6;
 	int chaseMovesTaken = 0;
 

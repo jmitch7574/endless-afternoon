@@ -1,6 +1,9 @@
 #include "arena_manager.h"
 #include "custom_draws.h"
+#include "renderer.h"
 #include "scene.h"
+#include "scene_manager.h"
+#include <algorithm>
 #include <cmath>
 #include <raylib-cpp.hpp>
 #include "arena_manager.h"
@@ -19,9 +22,40 @@ PlayMode::~PlayMode(void) { playScene = nullptr; }
 
 void PlayMode::Update()
 {
+	if (victoryTriggered || gameOverTriggered)
+	{
+		resultTransitionTimer -= GetFrameTime();
+		if (resultTransitionTimer <= 0.0f)
+		{
+			if (victoryTriggered)
+			{
+				g_SceneManager.SetScene(std::make_unique<VictoryScreen>());
+			}
+			else
+			{
+				g_SceneManager.SetScene(std::make_unique<GameOverScreen>());
+			}
+		}
+		return;
+	}
+
 	player.Update();
-	enemy.SetTargetGridPosition(player.gridPosition);
-	enemy.Update();
+	if (enemy.GetHealth() <= 0)
+	{
+		BeginVictory();
+		return;
+	}
+	if (player.GetHealth() <= 0)
+	{
+		BeginGameOver();
+		return;
+	}
+
+	if (enemy.isInGrid)
+	{
+		enemy.SetTargetGridPosition(player.gridPosition);
+		enemy.Update();
+	}
 	minuteHand.Update();
 	hourHand.Update();
 
@@ -54,6 +88,15 @@ void PlayMode::Update()
           timeSinceEvilZoneTick = 0;
       }
   }
+
+	if (enemy.GetHealth() <= 0)
+	{
+		BeginVictory();
+	}
+	else if (player.GetHealth() <= 0)
+	{
+		BeginGameOver();
+	}
 }
 void PlayMode::Draw()
 {
@@ -67,8 +110,15 @@ void PlayMode::Draw()
 	ArenaManager::DrawClockMarkers();
 	hourHand.Draw();
 	minuteHand.Draw();
-	player.Draw();
-	enemy.Draw();
+	if (!gameOverTriggered)
+	{
+		player.Draw();
+	}
+	if (enemy.isInGrid)
+	{
+		enemy.Draw();
+	}
+	DrawEnemyHealthBar();
 
 	CustomDraws::DrawArrow(Vector2(400, 400), 0, 200, 10, 50, 90, GOLD);
 
@@ -82,11 +132,59 @@ void PlayMode::Draw()
 #endif
 }
 
-void PlayMode::EnemyHit() 
+void PlayMode::EnemyHit(float damage) 
 {
+  enemy.Hurt(damage);
   minuteHand.Advance();
   minuteHand.activated = true;
   hourHand.activated = true;
+}
+
+void PlayMode::BeginVictory()
+{
+	if (victoryTriggered || gameOverTriggered)
+	{
+		return;
+	}
+
+	enemy.isInGrid = false;
+	victoryTriggered = true;
+	resultTransitionTimer = 0.6f;
+}
+
+void PlayMode::BeginGameOver()
+{
+	if (victoryTriggered || gameOverTriggered)
+	{
+		return;
+	}
+
+	gameOverTriggered = true;
+	resultTransitionTimer = 0.6f;
+}
+
+void PlayMode::DrawEnemyHealthBar()
+{
+	const float barWidth = 760.0f;
+	const float barHeight = 28.0f;
+	const float barX = ((float)RENDER_TEXTURE_WIDTH - barWidth) * 0.5f;
+	const float barY = 24.0f;
+	const float healthPercent =
+		enemy.GetMaxHealth() > 0 ? std::clamp(enemy.GetHealth() / (float)enemy.GetMaxHealth(), 0.0f, 1.0f) : 0.0f;
+
+	const Rectangle background = {barX, barY, barWidth, barHeight};
+	const Rectangle fill = {barX + 4.0f, barY + 4.0f, (barWidth - 8.0f) * healthPercent, barHeight - 8.0f};
+	const Color clockOrange = Color{196, 116, 36, 255};
+	const Color darkBacking = Color{22, 18, 14, 235};
+
+	DrawRectangleRec(background, darkBacking);
+	DrawRectangleRec(fill, clockOrange);
+	DrawRectangleLinesEx(background, 3.0f, WHITE);
+
+	const char *healthText = TextFormat("CLOCK  %.0f / %d", enemy.GetHealth(), enemy.GetMaxHealth());
+	const int textSize = 22;
+	const int textWidth = MeasureText(healthText, textSize);
+	DrawText(healthText, (int)(barX + (barWidth - textWidth) * 0.5f), (int)(barY + 3.0f), textSize, WHITE);
 }
 
 void PlayMode::DrawEvilZone()

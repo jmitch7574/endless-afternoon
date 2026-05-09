@@ -2,6 +2,7 @@
 #include "custom_draws.h"
 #include "entity.h"
 #include "raymath.h"
+#include "scene.h"
 #include "utils.h"
 #include <algorithm>
 #include <cmath>
@@ -17,6 +18,8 @@ constexpr float CLOCK_HAND_SWEEP_DEGREES = 125.0f;
 constexpr int CLOCK_HAND_TRAIL_SAMPLES = 14;
 constexpr float CLOCK_HAND_TRAIL_STEP = 0.02f;
 constexpr int SECONDARY_PULSE_SEGMENTS = 96;
+constexpr float BASIC_ATTACK_DAMAGE = 20.0f;
+constexpr float SECONDARY_ATTACK_DAMAGE = 30.0f;
 
 int GridX(Vector2 cell) { return (int)cell.x; }
 
@@ -29,7 +32,7 @@ int DistanceFromBossFootprint(Vector2 bossCenter, Vector2 cell)
 	const int outsideX = std::max(dx - BOSS_FOOTPRINT_HALF_CELLS, 0);
 	const int outsideY = std::max(dy - BOSS_FOOTPRINT_HALF_CELLS, 0);
 
-	return outsideX + outsideY;
+	return std::max(outsideX, outsideY);
 }
 
 bool BossFootprintContainsCell(Vector2 bossCenter, Vector2 cell)
@@ -95,6 +98,7 @@ void DrawAttackClockHand(Vector2 clockCenter, float sweepAngle, bool isRightSwin
 
 Enemy::Enemy(raylib::Vector2 startGridPos) : Entity(ArenaManager::GridPositionToWorld(startGridPos))
 {
+	health = maxHealth;
 	gridPosition = startGridPos;
 	targetGridPosition = startGridPos;
 	isInGrid = true;
@@ -135,6 +139,13 @@ int Enemy::GetChaseBudget() const { return chaseBudget; }
 int Enemy::GetNormalAttackCount() const { return normalAttackCount; }
 
 int Enemy::GetNormalAttacksPerCycle() const { return normalAttacksPerCycle; }
+
+int Enemy::GetMaxHealth() const { return maxHealth; }
+
+void Enemy::Hurt(float amount)
+{
+	health = std::max(0, health - (int)amount);
+}
 
 void Enemy::SetTargetGridPosition(Vector2 target) { targetGridPosition = target; }
 
@@ -239,19 +250,15 @@ void Enemy::Update()
 
 	switch (currentState)
 	{
-	// Step 4: Idle — wait until player is within 6 cells
+	// Idle hands off to Advance immediately; recover states create the boss's pauses.
 	case EnemyState::Idle:
-		if (dist <= aggroRange)
-		{
-			EnterState(EnemyState::Advance);
-		}
+		EnterState(EnemyState::Advance);
 		break;
 
-	// Steps 1+2+4: Advance — move toward player, stop when adjacent, never overlap
+	// Advance moves toward player, stops in attack range, and never overlaps.
 	case EnemyState::Advance:
 		if (dist > 0 && dist <= GetNextBasicAttackRange())
 		{
-			// Step 2: adjacent — start wind up
 			EnterState(EnemyState::WindUp);
 		}
 		else if (currentMoveCooldown <= 0)
@@ -262,6 +269,10 @@ void Enemy::Update()
 				Vector2{-1.0f, 0.0f},
 				Vector2{0.0f, 1.0f},
 				Vector2{0.0f, -1.0f},
+				Vector2{1.0f, 1.0f},
+				Vector2{1.0f, -1.0f},
+				Vector2{-1.0f, 1.0f},
+				Vector2{-1.0f, -1.0f},
 			};
 			Vector2 bestNextPos = gridPosition;
 			int bestDistance = isOverlappingTarget ? -1 : dist;
@@ -327,9 +338,9 @@ void Enemy::Update()
 		TriggerPunchEffect();
 		const int currentPlayerDistance = DistanceFromBossFootprint(gridPosition, targetGridPosition);
 		bool hit = currentPlayerDistance > 0 && currentPlayerDistance <= GetCurrentBasicAttackRange();
-		if (hit)
+		if (hit && playScene != nullptr)
 		{
-			// TODO: deal damage
+			playScene->player.Hurt(BASIC_ATTACK_DAMAGE);
 		}
 		normalAttackCount++;
 		nextBasicAttackIsRightSwing = !currentBasicAttackIsRightSwing;
@@ -370,7 +381,10 @@ void Enemy::Update()
 			(float)playerDistance > secondaryPulsePreviousRadius && (float)playerDistance <= currentPulseRadius)
 		{
 			secondaryAttackHasHit = true;
-			// TODO: deal damage
+			if (playScene != nullptr)
+			{
+				playScene->player.Hurt(SECONDARY_ATTACK_DAMAGE);
+			}
 		}
 
 		secondaryPulsePreviousRadius = currentPulseRadius;
@@ -386,7 +400,7 @@ void Enemy::Update()
 		if (stateTimer <= 0)
 		{
 			normalAttackCount = 0;
-			EnterState(dist <= aggroRange ? EnemyState::Advance : EnemyState::Idle);
+			EnterState(EnemyState::Advance);
 		}
 		break;
 	}
