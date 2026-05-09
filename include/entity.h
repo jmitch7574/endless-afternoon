@@ -28,15 +28,24 @@ class Player : public Entity
 	~Player(void);
 
 	void TryMove(Vector2 dir);
+	void TryDash(Vector2 dir);
 
 	void Update() override;
 	void Draw() override;
+	bool IsInvulnerable() const;
 	Vector2 gridPosition;
 
   protected:
 	float lerpSpeed = 0.2f;
 	float moveCooldown = 0.25f;
 	float currentMoveCooldown = 0;
+	float dashDoubleTapWindow = 0.35f;
+	float dashCooldown = 0.65f;
+	float dashInvulnerabilityDuration = 0.4f;
+	float dashInvulnerabilityTimer = 0.0f;
+	float lastDashTapTime = -1000.0f;
+	Vector2 lastDashTapDirection = Vector2{0.0f, 0.0f};
+	int dashRange = 3;
 };
 
 enum class EnemyState
@@ -71,6 +80,7 @@ class Enemy : public Entity
 	int GetNormalAttackCount() const;
 	int GetNormalAttacksPerCycle() const;
 	bool OccupiesGridPosition(Vector2 target) const;
+	bool TryPushGridPosition(Vector2 direction);
 
 	// Collision / Grid-based movement
 	bool isInGrid;

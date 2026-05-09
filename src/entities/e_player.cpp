@@ -31,6 +31,70 @@ bool IsWalkableGridPosition(Vector2 gridPosition)
 		   !IsEnemyBlockingGridPosition(gridPosition);
 }
 
+Vector2 NormalizeGridDirection(Vector2 direction)
+{
+	Vector2 normalizedDirection = Vector2{0.0f, 0.0f};
+
+	if (direction.x > 0.0f)
+	{
+		normalizedDirection.x = 1.0f;
+	}
+	else if (direction.x < 0.0f)
+	{
+		normalizedDirection.x = -1.0f;
+	}
+
+	if (direction.y > 0.0f)
+	{
+		normalizedDirection.y = 1.0f;
+	}
+	else if (direction.y < 0.0f)
+	{
+		normalizedDirection.y = -1.0f;
+	}
+
+	return normalizedDirection;
+}
+
+bool IsZeroDirection(Vector2 direction)
+{
+	return direction.x == 0.0f && direction.y == 0.0f;
+}
+
+bool IsSameDirection(Vector2 a, Vector2 b)
+{
+	return (int)a.x == (int)b.x && (int)a.y == (int)b.y;
+}
+
+Vector2 GetHeldMovementDirection()
+{
+	Vector2 direction = Vector2{0.0f, 0.0f};
+
+	if (IsKeyDown(MOVE_LEFT))
+	{
+		direction.x -= 1.0f;
+	}
+	if (IsKeyDown(MOVE_RIGHT))
+	{
+		direction.x += 1.0f;
+	}
+	if (IsKeyDown(MOVE_UP))
+	{
+		direction.y -= 1.0f;
+	}
+	if (IsKeyDown(MOVE_DOWN))
+	{
+		direction.y += 1.0f;
+	}
+
+	return NormalizeGridDirection(direction);
+}
+
+bool HasPressedMovementKey()
+{
+	return IsKeyPressed(MOVE_LEFT) || IsKeyPressed(MOVE_RIGHT) || IsKeyPressed(MOVE_UP) || IsKeyPressed(MOVE_DOWN);
+}
+
 bool IsValidArenaGridPosition(Vector2 gridPosition)
 {
 	return ArenaManager::IsValidGridPosition(ArenaManager::GridPositionToWorld(gridPosition));
@@ -97,6 +161,7 @@ PlayerTrail punchTrail[40] = {0};
 
 bool movedThisFrame = false;
 bool attackedThisFrame = false;
+bool dashedThisFrame = false;
 float hitAnimationTime = 1000;
 Vector2 currentDirection = Vector2(1, 0);
 Vector2 handpos;
@@ -110,30 +175,61 @@ Player::Player(raylib::Vector2 startPos) : Entity(startPos)
 
 Player::~Player(void) {}
 
+bool Player::IsInvulnerable() const { return dashInvulnerabilityTimer > 0.0f; }
+
 void Player::Update()
 {
 
   movedThisFrame = false;
   attackedThisFrame = false;
+  dashedThisFrame = false;
   
 	// Lerp Entity Position to Grid Position
 	position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
-	currentMoveCooldown -= GetFrameTime();
-  hitAnimationTime += GetFrameTime();
+	const float deltaTime = GetFrameTime();
+	currentMoveCooldown -= deltaTime;
+	dashInvulnerabilityTimer -= deltaTime;
+  hitAnimationTime += deltaTime;
 
 	Vector2 gridPositionLastFrame = gridPosition;
-	if (IsKeyDown(MOVE_LEFT))
-		TryMove(Vector2(-1, 0));
-	if (IsKeyDown(MOVE_RIGHT))
-		TryMove(Vector2(1, 0));
-	if (IsKeyDown(MOVE_UP))
-		TryMove(Vector2(0, -1));
-	if (IsKeyDown(MOVE_DOWN))
-		TryMove(Vector2(0, 1));
+	if (HasPressedMovementKey())
+	{
+		const Vector2 tapDirection = GetHeldMovementDirection();
+		const float currentTime = (float)GetTime();
+		if (!IsZeroDirection(tapDirection) && currentMoveCooldown <= 0.0f && !attackedThisFrame &&
+			IsSameDirection(tapDirection, lastDashTapDirection) &&
+			currentTime - lastDashTapTime <= dashDoubleTapWindow)
+		{
+			TryDash(tapDirection);
+			lastDashTapTime = -1000.0f;
+			lastDashTapDirection = Vector2{0.0f, 0.0f};
+		}
+		else
+		{
+			lastDashTapTime = currentTime;
+			lastDashTapDirection = tapDirection;
+		}
+	}
 
-  if (movedThisFrame) 
+	if (!dashedThisFrame)
+	{
+		if (IsKeyDown(MOVE_LEFT))
+			TryMove(Vector2(-1, 0));
+		if (IsKeyDown(MOVE_RIGHT))
+			TryMove(Vector2(1, 0));
+		if (IsKeyDown(MOVE_UP))
+			TryMove(Vector2(0, -1));
+		if (IsKeyDown(MOVE_DOWN))
+			TryMove(Vector2(0, 1));
+	}
+
+  if (movedThisFrame && !dashedThisFrame) 
   {
     currentMoveCooldown = moveCooldown;
+  }
+  if (dashedThisFrame)
+  {
+    currentMoveCooldown = dashCooldown;
   }
   if (attackedThisFrame)
   {
@@ -213,11 +309,12 @@ void Player::Draw()
 		DrawCircleV(position + punchTrail[i].pos, CELL_SIZE / 6.0f, Color{ 102, 191, 255, (unsigned char) punchTrail[i].opacity });
 	}
 
-	DrawCircleV(position, CELL_SIZE / 2.0f, SKYBLUE);
+	const Color playerColor = IsInvulnerable() ? Color{170, 235, 255, 255} : SKYBLUE;
+	DrawCircleV(position, CELL_SIZE / 2.0f, playerColor);
 
   if (hitAnimationTime < 1)
   {
-    DrawCircleV(position + handpos, CELL_SIZE / 6.0f, SKYBLUE);
+    DrawCircleV(position + handpos, CELL_SIZE / 6.0f, playerColor);
   }
 }
 
@@ -258,4 +355,74 @@ void Player::TryMove(Vector2 dir) {
 
   gridPosition = nextGridPosition;
   currentDirection = moveDir;
+}
+
+void Player::TryDash(Vector2 dir)
+{
+	if (currentMoveCooldown > 0)
+	{
+		return;
+	}
+
+	Vector2 dashDir = NormalizeGridDirection(dir);
+	if (IsZeroDirection(dashDir))
+	{
+		return;
+	}
+
+	const Vector2 startGridPosition = gridPosition;
+	Vector2 destination = startGridPosition;
+	bool hitEnemy = false;
+	int enemyHitStep = 0;
+
+	for (int step = 1; step <= dashRange; step++)
+	{
+		const Vector2 candidate = Vector2Add(startGridPosition, Vector2Scale(dashDir, (float)step));
+		if (!IsValidArenaGridPosition(candidate))
+		{
+			break;
+		}
+
+		if (IsEnemyBlockingGridPosition(candidate))
+		{
+			hitEnemy = true;
+			enemyHitStep = step;
+			break;
+		}
+
+		destination = candidate;
+	}
+
+	if (hitEnemy && playScene != nullptr)
+	{
+		const Vector2 enemyPushDirection = Vector2Scale(dashDir, -1.0f);
+		if (playScene->enemy.TryPushGridPosition(enemyPushDirection))
+		{
+			for (int step = enemyHitStep; step <= dashRange; step++)
+			{
+				const Vector2 candidate = Vector2Add(startGridPosition, Vector2Scale(dashDir, (float)step));
+				if (!IsValidArenaGridPosition(candidate))
+				{
+					break;
+				}
+
+				if (!IsEnemyBlockingGridPosition(candidate))
+				{
+					destination = candidate;
+					break;
+				}
+			}
+		}
+	}
+
+	if (Vector2Equals(destination, startGridPosition))
+	{
+		return;
+	}
+
+	gridPosition = destination;
+	currentDirection = dashDir;
+	movedThisFrame = true;
+	dashedThisFrame = true;
+	dashInvulnerabilityTimer = dashInvulnerabilityDuration;
 }

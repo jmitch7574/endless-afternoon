@@ -140,6 +140,18 @@ void Enemy::SetTargetGridPosition(Vector2 target) { targetGridPosition = target;
 
 bool Enemy::OccupiesGridPosition(Vector2 target) const { return BossFootprintContainsCell(gridPosition, target); }
 
+bool Enemy::TryPushGridPosition(Vector2 direction)
+{
+	const Vector2 nextGridPosition = Vector2Add(gridPosition, direction);
+	if (!IsBossFootprintValid(nextGridPosition))
+	{
+		return false;
+	}
+
+	gridPosition = nextGridPosition;
+	return true;
+}
+
 int Enemy::GetNextBasicAttackRange() const
 {
 	return nextBasicAttackIsRightSwing ? minuteHandAttackRange : hourHandAttackRange;
