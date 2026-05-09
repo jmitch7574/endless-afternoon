@@ -5,6 +5,7 @@
 #endif
 #include "scene_manager.h"
 #include "renderer.h"
+#include <chrono>
 
 int renderTextureWidth = 1920;
 int renderTextureHeight = 1080;
@@ -18,6 +19,9 @@ int main()
 	raylib::Window window(1920, 1080, "raylib-cpp [core] example - basic window");
 
   Renderer::InitRenderTexture();
+
+	const auto p1 = std::chrono::system_clock::now();
+	SetRandomSeed(std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count() );
   //DisableCursor();
 
 #if defined(PLATFORM_WEB)

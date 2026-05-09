@@ -269,6 +269,8 @@ void Player::Update()
   Vector2 ControlOne = Vector2(20, 25);
   Vector2 ControlTwo = Vector2(45, 10);
 
+  
+
   float threshold = hitAnimationLerp * 20;
   
   peakThreshold = std::max(threshold, peakThreshold);
@@ -279,6 +281,7 @@ void Player::Update()
   if (hitAnimationTime < 1)
   {
     handpos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, hitAnimationLerp);
+    if (isPunchFlipped) handpos.y = -handpos.y;
     float angle = Utils::Vector2ToAngle(currentDirection) * PI / 180.0f;
 
     handpos = Vector2Rotate(handpos, angle);
@@ -289,6 +292,7 @@ void Player::Update()
     if (i >= threshold) continue;
 
     Vector2 trailPos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, (float)i / 20.0f);
+    if (isPunchFlipped) trailPos.y = -trailPos.y;
     float angle = Utils::Vector2ToAngle(currentDirection) * PI / 180.0f;
     trailPos = Vector2Rotate(trailPos, angle);
 
@@ -365,6 +369,7 @@ void Player::TryMove(Vector2 dir) {
 
     playScene->EnemyHit(25.0f);
 
+    isPunchFlipped = GetRandomValue(0, 1) == 1; 
 
     return;
   }
