@@ -1,48 +1,52 @@
 #pragma once
 #include "entity.h"
 
-class Scene {
-public:
-  Scene() = default;
-  virtual ~Scene() = default;
-
-  virtual void Update() = 0;
-  virtual void Draw() = 0;
-};
-
-class MainMenu : public Scene {
-public:
-  MainMenu();
-  ~MainMenu(void);
-
-  void Update() override;
-  void Draw() override;
-
-  int MenuOption = 0;
-  bool acceptPressed = false;
-};
-
-class Cutscene : public Scene {
+class Scene
+{
   public:
-  Cutscene();
-  ~Cutscene(void);
+	Scene() = default;
+	virtual ~Scene() = default;
 
-  void Update() override;
-  void Draw() override;
+	virtual void Update() = 0;
+	virtual void Draw() = 0;
 };
 
-class PlayMode : public Scene {
-public:
-  PlayMode();
-  ~PlayMode(void);
+class MainMenu : public Scene
+{
+  public:
+	MainMenu();
+	~MainMenu(void);
 
-  void Update() override;
-  void Draw() override;
+	void Update() override;
+	void Draw() override;
 
-  Player player;
-  Enemy enemy;
-  ClockHand minuteHand;
-  ClockHand hourHand;
+	int MenuOption = 0;
+	bool acceptPressed = false;
+};
+
+class Cutscene : public Scene
+{
+  public:
+	Cutscene();
+	~Cutscene(void);
+
+	void Update() override;
+	void Draw() override;
+};
+
+class PlayMode : public Scene
+{
+  public:
+	PlayMode();
+	~PlayMode(void);
+
+	void Update() override;
+	void Draw() override;
+
+	Player player;
+	Enemy enemy;
+	ClockHand minuteHand;
+	ClockHand hourHand;
 };
 
 extern PlayMode* playScene;

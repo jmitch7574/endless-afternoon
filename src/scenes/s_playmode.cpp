@@ -1,7 +1,8 @@
+#include "arena_manager.h"
 #include "scene.h"
 #include <cmath>
 #include <raylib-cpp.hpp>
-#include "grid_manager.h"
+#include "arena_manager.h"
 #include "custom_draws.h"
 
 PlayMode* playScene;
@@ -14,26 +15,28 @@ PlayMode::PlayMode()
       }
 PlayMode::~PlayMode(void) {playScene = nullptr;}
 
-void PlayMode::Update() {
-  player.Update();
-  enemy.Update();
-  minuteHand.Update();
-  hourHand.Update();
+void PlayMode::Update()
+{
+	player.Update();
+	enemy.Update();
+	minuteHand.Update();
+	hourHand.Update();
 }
-void PlayMode::Draw() {
-  ClearBackground(BLACK);
-  GridManager::DrawLevelGrid();
-  GridManager::MaskOutsideOctagon();
-  GridManager::DrawLevelBoundary();
-  GridManager::DrawClockMarkers();
-  hourHand.Draw();
-  minuteHand.Draw();
-  player.Draw();
-  enemy.Draw();
+void PlayMode::Draw()
+{
+	ClearBackground(BLACK);
+	ArenaManager::DrawLevelGrid();
+	ArenaManager::MaskOutsideOctagon();
+	ArenaManager::DrawOctagonBoundary();
+	ArenaManager::DrawClockMarkers();
+	hourHand.Draw();
+	minuteHand.Draw();
+	player.Draw();
+	enemy.Draw();
 
   CustomDraws::DrawArrow(Vector2(400, 400), 0, 200, 10, 50, 90, GOLD);
 
 #ifndef NDEBUG
-  DrawText(TextFormat("Player Pos: %f, %f", player.gridPosition.x, player.gridPosition.y), 20, 20, 20, WHITE);
+	DrawText(TextFormat("Player Pos: %f, %f", player.gridPosition.x, player.gridPosition.y), 20, 20, 20, WHITE);
 #endif
 }
