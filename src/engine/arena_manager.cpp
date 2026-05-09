@@ -21,6 +21,7 @@
 #define BOUNDS_TOP (GRID_CENTER.y - GRID_HALF_SIZE)
 #define BOUNDS_BOTTOM (GRID_CENTER.y + GRID_HALF_SIZE)
 
+// Helper functions for drawing the octagon boundary
 namespace
 {
 struct OctagonBounds
@@ -43,37 +44,51 @@ float GetOctagonEdgeDistance(float angle)
 {
 	const float x = fabsf(cosf(angle));
 	const float y = fabsf(sinf(angle));
-	const float diagonalLimit = GRID_HALF_SIZE + OCTAGON_HALF_FLAT_EDGE_PX;
+	const float diagonalLimit = GRID_HALF_SIZE + OCTAGON_HALF_FLAT_EDGE_PX - 100.0f;
 
 	float distance = diagonalLimit / (x + y);
+
 	if (x > 0.0f)
+	{
 		distance = fminf(distance, GRID_HALF_SIZE / x);
+	}
+
 	if (y > 0.0f)
+	{
 		distance = fminf(distance, GRID_HALF_SIZE / y);
+	}
 
 	return distance;
 }
 } // namespace
 
+// Convert grid position to world position
 Vector2 ArenaManager::GridPositionToWorld(Vector2 GridPos)
 {
-	return Vector2Add(Vector2(GRID_ORIGIN_X + CELL_SIZE / 2, GRID_ORIGIN_Y + CELL_SIZE / 2), Vector2Scale(GridPos, CELL_SIZE));
+	return Vector2Add(Vector2(GRID_ORIGIN_X + CELL_SIZE / 2, GRID_ORIGIN_Y + CELL_SIZE / 2),
+					  Vector2Scale(GridPos, CELL_SIZE));
 }
 
+// Check if a world position is within the grid
 bool ArenaManager::IsValidGridPosition(Vector2 worldPosition)
 {
 	float dx = fabsf(worldPosition.x - GRID_CENTER.x);
 	float dy = fabsf(worldPosition.y - GRID_CENTER.y);
 
 	if (dx > GRID_HALF_SIZE || dy > GRID_HALF_SIZE)
+	{
 		return false;
+	}
 
 	if (dx + dy + 5.0f > GRID_HALF_SIZE + OCTAGON_HALF_FLAT_EDGE_PX)
+	{
 		return false;
+	}
 
 	return true;
 }
 
+// Draw the level grid
 void ArenaManager::DrawLevelGrid()
 {
 	const float endX = GRID_ORIGIN_X + GRID_TOTAL_SIZE_PX;
@@ -89,29 +104,31 @@ void ArenaManager::DrawLevelGrid()
 	}
 }
 
+// Draw the octagon boundary
 void ArenaManager::DrawOctagonBoundary()
 {
-  const auto b = GetOctagonBounds();
-  const Vector2 vertices[8] = {{b.flatLeft, b.top},	  {b.flatRight, b.top},	   {b.right, b.flatTop},
-                 {b.right, b.flatBottom}, {b.flatRight, b.bottom}, {b.flatLeft, b.bottom},
-                 {b.left, b.flatBottom},  {b.left, b.flatTop}};
+	const auto b = GetOctagonBounds();
+	const Vector2 vertices[8] = {{b.flatLeft, b.top},	  {b.flatRight, b.top},	   {b.right, b.flatTop},
+								 {b.right, b.flatBottom}, {b.flatRight, b.bottom}, {b.flatLeft, b.bottom},
+								 {b.left, b.flatBottom},  {b.left, b.flatTop}};
 
-  for (int i = 0; i < 8; i++)
-  {
-    DrawLineEx(vertices[i], vertices[(i + 1) % 8], 4.0f, WHITE);
-  }
+	for (int i = 0; i < 8; i++)
+	{
+		DrawLineEx(vertices[i], vertices[(i + 1) % 8], 4.0f, WHITE);
+	}
 }
 
+// Mask outside octagon
 void ArenaManager::MaskOutsideOctagon()
 {
 	const auto b = GetOctagonBounds();
 
 	DrawRectangleRec(Rectangle{0, 0, (float)RENDER_TEXTURE_WIDTH, BOUNDS_TOP}, BLACK);
-	DrawRectangleRec(Rectangle{0, BOUNDS_BOTTOM, (float)RENDER_TEXTURE_WIDTH, (float)RENDER_TEXTURE_HEIGHT - BOUNDS_BOTTOM},
-					 BLACK);
+	DrawRectangleRec(
+		Rectangle{0, BOUNDS_BOTTOM, (float)RENDER_TEXTURE_WIDTH, (float)RENDER_TEXTURE_HEIGHT - BOUNDS_BOTTOM}, BLACK);
 	DrawRectangleRec(Rectangle{0, 0, BOUNDS_LEFT, (float)RENDER_TEXTURE_HEIGHT}, BLACK);
-	DrawRectangleRec(Rectangle{BOUNDS_RIGHT, 0, (float)RENDER_TEXTURE_WIDTH - BOUNDS_RIGHT, (float)RENDER_TEXTURE_HEIGHT},
-					 BLACK);
+	DrawRectangleRec(
+		Rectangle{BOUNDS_RIGHT, 0, (float)RENDER_TEXTURE_WIDTH - BOUNDS_RIGHT, (float)RENDER_TEXTURE_HEIGHT}, BLACK);
 
 	DrawTriangle(Vector2{b.right, b.top}, Vector2{b.flatRight, b.top}, Vector2{b.right, b.flatTop}, BLACK);
 	DrawTriangle(Vector2{b.left, b.top}, Vector2{b.left, b.flatTop}, Vector2{b.flatLeft, b.top}, BLACK);
@@ -119,7 +136,7 @@ void ArenaManager::MaskOutsideOctagon()
 	DrawTriangle(Vector2{b.left, b.bottom}, Vector2{b.flatLeft, b.bottom}, Vector2{b.left, b.flatBottom}, BLACK);
 }
 
-
+// Draw the clock markers
 void ArenaManager::DrawClockMarkers()
 {
 	const float gap = 30.0f;

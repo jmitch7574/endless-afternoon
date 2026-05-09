@@ -5,6 +5,87 @@
 #include <iostream>
 #include "raylib-cpp.hpp"
 #include "utils.h"
+#include "entity.h"
+
+namespace
+{
+constexpr int ARENA_CENTER_GRID = CELL_COUNT / 2;
+
+int GridX(Vector2 gridPosition)
+{
+	return (int)gridPosition.x;
+}
+
+int GridY(Vector2 gridPosition)
+{
+	return (int)gridPosition.y;
+}
+
+bool IsEnemyBlockingGridPosition(Vector2 gridPosition)
+{
+	return playScene != nullptr && playScene->enemy.isInGrid && playScene->enemy.OccupiesGridPosition(gridPosition);
+}
+
+bool IsWalkableGridPosition(Vector2 gridPosition)
+{
+	return ArenaManager::IsValidGridPosition(ArenaManager::GridPositionToWorld(gridPosition)) &&
+		   !IsEnemyBlockingGridPosition(gridPosition);
+}
+
+bool IsValidArenaGridPosition(Vector2 gridPosition)
+{
+	return ArenaManager::IsValidGridPosition(ArenaManager::GridPositionToWorld(gridPosition));
+}
+
+int DirectionTowardArenaCenter(int gridCoordinate)
+{
+	if (gridCoordinate < ARENA_CENTER_GRID)
+	{
+		return 1;
+	}
+
+	if (gridCoordinate > ARENA_CENTER_GRID)
+	{
+		return -1;
+	}
+
+	return 1;
+}
+
+Vector2 GetBoundaryAssistDirection(Vector2 playerGridPosition, Vector2 inputDir)
+{
+	if (IsValidArenaGridPosition(Vector2Add(playerGridPosition, inputDir)))
+	{
+		return inputDir;
+	}
+
+	Vector2 candidates[2] = {inputDir, inputDir};
+
+	if ((int)inputDir.x == 0)
+	{
+		const int slideX = DirectionTowardArenaCenter(GridX(playerGridPosition));
+		candidates[0] = Vector2{(float)slideX, inputDir.y};
+		candidates[1] = Vector2{(float)-slideX, inputDir.y};
+	}
+	else if ((int)inputDir.y == 0)
+	{
+		const int slideY = DirectionTowardArenaCenter(GridY(playerGridPosition));
+		candidates[0] = Vector2{inputDir.x, (float)slideY};
+		candidates[1] = Vector2{inputDir.x, (float)-slideY};
+	}
+
+	for (const Vector2 &candidate : candidates)
+	{
+		if (IsWalkableGridPosition(Vector2Add(playerGridPosition, candidate)))
+		{
+			return candidate;
+		}
+	}
+
+	return inputDir;
+}
+} // namespace
+
 
 Player::Player(raylib::Vector2 startPos) : Entity(startPos)
 {
@@ -131,22 +212,30 @@ void Player::TryMove(Vector2 dir) {
   if (currentMoveCooldown > 0) return;
   if (attackedThisFrame) return;
 
-  Vector2 hypotheticalWorldPos = ArenaManager::GridPositionToWorld(Vector2Add(gridPosition, dir));
+  Vector2 moveDir = dir;
+  Vector2 cornerAssistDir = GetBoundaryAssistDirection(gridPosition, dir);
+  if (!Vector2Equals(cornerAssistDir, dir) && IsWalkableGridPosition(Vector2Add(gridPosition, cornerAssistDir)))
+  {
+    moveDir = cornerAssistDir;
+  }
+
+  Vector2 nextGridPosition = Vector2Add(gridPosition, moveDir);
+  Vector2 hypotheticalWorldPos = ArenaManager::GridPositionToWorld(nextGridPosition);
 
   if (!ArenaManager::IsValidGridPosition(hypotheticalWorldPos)) return;
 
   movedThisFrame = true;
 
-  bool enemyCollide = CheckCollisionCircleRec(hypotheticalWorldPos, CELL_SIZE / 2.0f, playScene->enemy.GetBBoxWorld());
+  bool enemyCollide = IsEnemyBlockingGridPosition(nextGridPosition);
   
-  if (enemyCollide && playScene->enemy.isInGrid){
+  if (enemyCollide){
     // Successful Attack
     attackedThisFrame = true;
     
     std::cout << "Enemy Attacked";
 
     hitAnimationTime = 0;
-    currentDirection = dir;
+    currentDirection = moveDir;
 
     peakThreshold = 0;
 
@@ -156,8 +245,9 @@ void Player::TryMove(Vector2 dir) {
     return;
   }
 
-  gridPosition = Vector2Add(gridPosition, dir);
-  currentDirection = dir;
+  gridPosition = nextGridPosition;
+  currentDirection = moveDir;
+  
 }
 
 void Player::Hurt(float amount) 

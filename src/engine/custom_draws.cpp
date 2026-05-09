@@ -3,9 +3,7 @@
 
 void CustomDraws::DrawArrow(Vector2 baseOrigin, Vector2 direction, float length, float thickness, float fletchLength, float fletchAngle, Color color)
 {
-  fletchAngle = 180 - fletchAngle;
-  fletchAngle = fletchAngle * (PI / 180.0f);
-  
+  fletchAngle = (180.0f - fletchAngle) * DEG2RAD;
   Vector2 endPos = Vector2Add(baseOrigin,Vector2Scale(direction, length));
 
   // Main Length
