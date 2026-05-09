@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build and Run",
+            "label": "Build Debug",
             "type": "shell",
             "command": "cmake -S . -B build && cmake --build build --config Debug && .\\build\\Debug\\endless_afternoon.exe",
             "options": {
@@ -16,7 +16,42 @@
             },
             "group": {
                 "kind": "build",
-                "isDefault": true
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Release",
+            "type": "shell",
+            "command": "cmake -S . -B build && cmake --build build --config Release && .\\build\\Release\\endless_afternoon.exe",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
+            "group": {
+                "kind": "build",
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Arcademia",
+            "type": "shell",
+            "command": "cmake -S . -B build && cmake --build build --config Arcademia && .\\build\\Arcademia\\endless_afternoon.exe",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
+            "group": {
+                "kind": "build",
             },
             "problemMatcher": "$msCompile"
         }

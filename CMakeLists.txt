@@ -2,6 +2,18 @@ cmake_minimum_required(VERSION 3.14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(endless_afternoon)
 
+if(CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_CONFIGURATION_TYPES
+        Debug
+        Release
+        RelWithDebInfo
+        MinSizeRel
+        Arcademia
+        CACHE STRING "" FORCE
+    )
+endif()
+
+
 # raylib
 find_package(raylib QUIET)
 if (NOT raylib_FOUND)
@@ -49,3 +61,9 @@ target_link_libraries(${PROJECT_NAME}
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 20
 )
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    $<$<CONFIG:Arcademia>:ARCADEMIA>
+)
+
+set(CMAKE_CXX_FLAGS_ARCADEMIA "${CMAKE_CXX_FLAGS_RELEASE}")

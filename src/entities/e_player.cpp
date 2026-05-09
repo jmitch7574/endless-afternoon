@@ -1,5 +1,6 @@
 #include "entity.h"
 #include "grid_manager.h"
+#include "keybinds.h"
 
 struct PlayerTrail {
   Vector2 pos;
@@ -22,11 +23,11 @@ void Player::Update() {
   currentMoveCooldown -= GetFrameTime();
 
   Vector2 gridPositionLastFrame = gridPosition;
-  if (IsKeyDown(KEY_LEFT)) TryMove(Vector2(-1, 0));
-  if (IsKeyDown(KEY_RIGHT)) TryMove(Vector2(1, 0));
-  if (IsKeyDown(KEY_UP)) TryMove(Vector2(0, -1));
-  if (IsKeyDown(KEY_DOWN)) TryMove(Vector2(0, 1));
-  
+  if (IsKeyDown(MOVE_LEFT))  TryMove(Vector2(-1, 0));
+  if (IsKeyDown(MOVE_RIGHT)) TryMove(Vector2(1, 0));
+  if (IsKeyDown(MOVE_UP))    TryMove(Vector2(0, -1));
+  if (IsKeyDown(MOVE_DOWN))  TryMove(Vector2(0, 1));
+
   if (!Vector2Equals(gridPosition, gridPositionLastFrame)) 
     currentMoveCooldown = moveCooldown;
 

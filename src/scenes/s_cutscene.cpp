@@ -2,6 +2,8 @@
 #include <string>
 #include "scene_manager.h"
 #include "raylib-cpp.hpp"
+#include "keybinds.h"
+#include <format>
 
 std::string lines[] = {
   "The Siesta is a short nap taken during the \nearly afternoon, a moment of peace \nafter a morning's work",
@@ -39,7 +41,7 @@ void Cutscene::Update()
   
   textToDisplay = currentString.substr(0, shownText);
 
-  if (IsKeyPressed(KEY_A)) cutsceneSkipped = true;
+  if (IsKeyPressed(ACCEPT )) cutsceneSkipped = true;
 
   if (shownText > currentString.length() + 30 && currentLine < 2)
   {
@@ -62,7 +64,7 @@ void Cutscene::Draw()
 {
   ClearBackground(BLACK);
   DrawText(TextSubtext(currentString.c_str(), 0, shownText), 200, 300, 64, WHITE);
-  DrawText("Press A to Skip", 50, 50, 32, WHITE);
+  DrawText(std::format("Press {} to Skip", ACCEPT_STRING).c_str(), 50, 50, 32, WHITE);
 
   int actualFade = std::min(fadeTicks * 2, 255);
 
