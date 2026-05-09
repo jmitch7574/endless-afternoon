@@ -3,33 +3,49 @@
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #endif
-#include "scene_manager.h"
+
 #include "renderer.h"
 #include <chrono>
 #include "resource_loader.h"
+#include "scene_manager.h"
+#include "utils.h"
+#include <memory>
 
-int renderTextureWidth = 1920;
-int renderTextureHeight = 1080;
-RenderTexture2D target;
+// Update the scene that is currently active, and draw it to the render texture.
+void UpdateDrawFrame()
+{
+	g_SceneManager.Update();
 
-void UpdateDrawFrame(void); // Update and Draw one frame
+	BeginTextureMode(rt_RenderTexture);
+	g_SceneManager.Draw();
+	EndTextureMode();
 
-// Initialisation
+	BeginDrawing();
+	Renderer::BlipRenderTexture();
+
+#ifdef ARCADEMIA
+	DrawText("Arcademia Edition", 20, 20, 32, WHITE);
+#endif
+
+	EndDrawing();
+}
+
+// Main enrty to game starts here.
 int main()
 {
-	raylib::Window window(1920, 1080, "raylib-cpp [core] example - basic window");
+	raylib::Window window(RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, "Siesta Disasta");
 
-  Renderer::InitRenderTexture();
-
-	const auto p1 = std::chrono::system_clock::now();
-	SetRandomSeed(std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count() );
-  //DisableCursor();
+	Renderer::InitRenderTexture();
+	Utils::SeedRandom();
+	g_SceneManager.SetScene(std::make_unique<MainMenu>());
 
 #if defined(PLATFORM_WEB)
 	emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
 #else
-
 	SetTargetFPS(60);
+	SetWindowState(FLAG_WINDOW_UNDECORATED);
+	SetWindowSize(GetMonitorWidth(0), GetMonitorHeight(0));
+	SetWindowPosition(0, 0);
 
 	g_SceneManager.SetScene(std::make_unique<MainMenu>());
 
@@ -40,28 +56,9 @@ int main()
 	InitAudioDevice();
 	Resources::Load();
 
-  while (!window.ShouldClose())
-  {
-
-		g_SceneManager.Update();
-
-    // Render Texture - Actual Game
-    BeginTextureMode(rt_RenderTexture);
-
-		g_SceneManager.Draw();
-
-		EndTextureMode();
-
-		// Flip Render Texture to Any Resolution
-		BeginDrawing();
-
-    Renderer::BlipRenderTexture();
-
-#ifdef ARCADEMIA
-    DrawText("Arcademia Edition", 20, 20, 32, WHITE);
-#endif
-
-		EndDrawing();
+	while (!window.ShouldClose())
+	{
+		UpdateDrawFrame();
 	}
 
 #endif

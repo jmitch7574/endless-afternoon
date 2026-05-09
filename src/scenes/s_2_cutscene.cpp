@@ -5,7 +5,6 @@
 #include <format>
 #include <string>
 
-
 std::string lines[] = {
 	"The Siesta is a short nap taken during the \nearly afternoon, a moment of peace \nafter a morning's work",
 	"They should come and go with no issue, and \nshould be followed by an easy wake, \nand a feeling of "
@@ -26,7 +25,6 @@ Cutscene::Cutscene()
 	ticks = 0;
 	currentLine = 0;
 	shownText = 0;
-
 }
 
 Cutscene::~Cutscene() {}

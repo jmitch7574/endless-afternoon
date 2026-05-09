@@ -1,5 +1,8 @@
 #pragma once
-#include "entity.h"
+#include "danger_effects.h"
+#include "entities/clockhand.h"
+#include "entities/enemy.h"
+#include "entities/player.h"
 #include "danger_effects.h"
 
 class Scene
@@ -21,8 +24,14 @@ class MainMenu : public Scene
 	void Update() override;
 	void Draw() override;
 
-	int MenuOption = 0;
-	bool acceptPressed = false;
+  private:
+	enum class MenuOption
+	{
+		Play,
+		Quit
+	};
+
+	MenuOption selectedOption = MenuOption::Play;
 };
 
 class Cutscene : public Scene
@@ -44,13 +53,14 @@ class PlayMode : public Scene
 	void Update() override;
 	void Draw() override;
 
-  void EnemyHit(float damage);
-  void DrawEvilZone();
-  void DrawEnemyHealthBar();
+	void EnemyHit(float damage);
+	void StartRedLightGreenLight();
+	void DrawEvilZone();
+	void DrawEnemyHealthBar();
 
 	Player player;
-  bool isPlayerInEvilZone;
-  float timeSinceEvilZoneTick = 100;
+	bool isPlayerInEvilZone = false;
+	float timeSinceEvilZoneTick = 100;
 
 	Enemy enemy;
 	ClockHand minuteHand;
@@ -58,12 +68,30 @@ class PlayMode : public Scene
 	DangerEffects dangerEffects;
 
   private:
+	struct RedLightCell
+	{
+		Vector2 gridPosition;
+		float telegraphTimer;
+	};
+
 	void BeginVictory();
 	void BeginGameOver();
+	void UpdateBossPhaseFromHealth();
+	void UpdateRedLightGreenLight(float deltaTime);
+	void DrawRedLightGreenLight();
+	void QueueRedLightCells();
+	bool IsRedLightCellQueued(Vector2 gridPosition) const;
+	bool IsPlayerOnActiveRedLightCell() const;
 
 	bool victoryTriggered = false;
 	bool gameOverTriggered = false;
 	float resultTransitionTimer = 0.0f;
+	int bossHealthPhase = 0;
+	bool redLightGreenLightActive = false;
+	float redLightGreenLightTimer = 0.0f;
+	float redLightNextWaveTimer = 0.0f;
+	float redLightDamageCooldown = 0.0f;
+	std::vector<RedLightCell> redLightCells;
 };
 
 class VictoryScreen : public Scene
