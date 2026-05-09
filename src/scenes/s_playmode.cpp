@@ -26,6 +26,8 @@ void PlayMode::Draw() {
   player.Draw();
   enemy.Draw();
 
+  CustomDraws::DrawArrow(Vector2(400, 400), 0, 200, 10, 50, 90, GOLD);
+
 #ifndef NDEBUG
   DrawText(TextFormat("Player Pos: %f, %f", player.gridPosition.x, player.gridPosition.y), 20, 20, 20, WHITE);
 #endif
