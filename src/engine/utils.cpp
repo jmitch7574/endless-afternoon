@@ -26,3 +26,32 @@ Vector2 Utils::BezierLerp(Vector2 p1, Vector2 p2, Vector2 c1, Vector2 c2, float 
   Vector2 e = Vector2Lerp(b, c, t);
   return Vector2Lerp(d, e, t);
 }
+
+bool Utils::LineIntersectsCircle(Vector2 p1, Vector2 p2, Vector2 center, float radius)
+{
+    Vector2 d = Vector2Subtract(p2, p1);       // segment direction
+    Vector2 f = Vector2Subtract(p1, center);   // vector from circle to line start
+
+    float a = Vector2DotProduct(d, d);
+    float b = 2 * Vector2DotProduct(f, d);
+    float c = Vector2DotProduct(f, f) - radius * radius;
+
+    float discriminant = b*b - 4*a*c;
+
+    if (discriminant < 0)
+    {
+        // no intersection
+        return false;
+    }
+
+    discriminant = sqrtf(discriminant);
+
+    float t1 = (-b - discriminant) / (2*a);
+    float t2 = (-b + discriminant) / (2*a);
+
+    // check if either t is within [0,1] => intersection along the segment
+    if ((t1 >= 0 && t1 <= 1) || (t2 >= 0 && t2 <= 1))
+        return true;
+
+    return false;
+}

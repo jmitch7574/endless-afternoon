@@ -4,14 +4,16 @@
 #include <raylib-cpp.hpp>
 #include "arena_manager.h"
 #include "custom_draws.h"
+#include <iostream>
 
 PlayMode* playScene;
 
 PlayMode::PlayMode()
     : player(Vector2{10, 10}), enemy(Vector2{1085, 415}),
       minuteHand(Vector2{960, 540}, -90.0f, 440.0f, 8.0f, WHITE),
-      hourHand(Vector2{960, 540}, 0.0f, 280.0f, 12.0f, WHITE) {
+      hourHand(Vector2{960, 540}, -90.0f, 280.0f, 12.0f, WHITE) {
         playScene = this;
+        std::cout << "PlayMode constructor: Player health = " << player.GetHealth() << std::endl;
       }
 PlayMode::~PlayMode(void) {playScene = nullptr;}
 
@@ -21,11 +23,49 @@ void PlayMode::Update()
 	enemy.Update();
 	minuteHand.Update();
 	hourHand.Update();
+
+  if (IsKeyDown(KEY_L)) 
+  {
+    minuteHand.BeginBigDeadlySpin();
+    hourHand.BeginBigDeadlySpin();
+  }
+
+  // Special Check - Is the player in the evil zone
+
+  bool collision = CheckCollisionPointPoly(
+    player.GetPosition(),
+    new Vector2[]{
+      minuteHand.GetPosition(), 
+      minuteHand.GetLargeExtendedPoint(), 
+      Vector2Scale(Vector2Normalize(Vector2Scale(Vector2Add(minuteHand.GetLargeExtendedPoint(),  hourHand.GetLargeExtendedPoint()), 0.5f)), 10000), 
+      hourHand.GetLargeExtendedPoint()
+    },
+    4
+  );
+
+  timeSinceEvilZoneTick += GetFrameTime();
+
+  if (collision)
+  {
+      if (timeSinceEvilZoneTick >= 3.0f)
+      {
+          player.Hurt(40);
+          timeSinceEvilZoneTick = 0;
+      }
+      else if (timeSinceEvilZoneTick >= 1.0f)
+      {
+          player.Hurt(5);
+          timeSinceEvilZoneTick = 0;
+      }
+  }
 }
 void PlayMode::Draw()
 {
 	ClearBackground(BLACK);
 	ArenaManager::DrawLevelGrid();
+
+  DrawEvilZone();
+
 	ArenaManager::MaskOutsideOctagon();
 	ArenaManager::DrawOctagonBoundary();
 	ArenaManager::DrawClockMarkers();
@@ -38,5 +78,20 @@ void PlayMode::Draw()
 
 #ifndef NDEBUG
 	DrawText(TextFormat("Player Pos: %f, %f", player.gridPosition.x, player.gridPosition.y), 20, 20, 20, WHITE);
+	DrawText(TextFormat("Player Health: %f / %i", player.GetHealth(), 100), 20, 50, 20, WHITE);
 #endif
+}
+
+void PlayMode::EnemyHit() 
+{
+  minuteHand.Advance();
+  minuteHand.activated = true;
+  hourHand.activated = true;
+}
+
+void PlayMode::DrawEvilZone()
+{
+  if (minuteHand.activated == false) return;
+
+  DrawCircleSector(minuteHand.GetPosition(), 1000, hourHand.GetAngle(), minuteHand.GetAngle(), 1, Color(255, 0, 0, 128));
 }

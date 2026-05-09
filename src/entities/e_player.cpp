@@ -6,25 +6,9 @@
 #include "raylib-cpp.hpp"
 #include "utils.h"
 
-
-struct PlayerTrail
-{
-	Vector2 pos;
-	int opacity;
-};
-
-PlayerTrail trail[120] = {0};
-PlayerTrail punchTrail[40] = {0};
-
-bool movedThisFrame = false;
-bool attackedThisFrame = false;
-float hitAnimationTime = 1000;
-Vector2 currentDirection = Vector2(1, 0);
-Vector2 handpos;
-float peakThreshold = 0;
-
 Player::Player(raylib::Vector2 startPos) : Entity(startPos)
 {
+  health = 100;
 	gridPosition = startPos;
 	position = ArenaManager::GridPositionToWorld(gridPosition);
 }
@@ -133,13 +117,14 @@ void Player::Draw()
 
 		DrawCircleV(position + punchTrail[i].pos, CELL_SIZE / 6.0f, Color{ 102, 191, 255, (unsigned char) punchTrail[i].opacity });
 	}
+  if (hitAnimationTime < 1)
+  {
+
+    DrawCircleV(position + handpos, CELL_SIZE / 6.0f, Color{ 102, 191, 255, (unsigned char)(255 - hitAnimationTime * 255) });
+  }
 
 	DrawCircleV(position, CELL_SIZE / 2.0f, SKYBLUE);
 
-  if (hitAnimationTime < 1)
-  {
-    DrawCircleV(position + handpos, CELL_SIZE / 6.0f, SKYBLUE);
-  }
 }
 
 void Player::TryMove(Vector2 dir) {
@@ -165,10 +150,22 @@ void Player::TryMove(Vector2 dir) {
 
     peakThreshold = 0;
 
+    playScene->EnemyHit();
+
 
     return;
   }
 
   gridPosition = Vector2Add(gridPosition, dir);
   currentDirection = dir;
+}
+
+void Player::Hurt(float amount) 
+{
+  health -= amount;
+}
+
+void Player::Knockback(Vector2 Knockback) 
+{
+  
 }

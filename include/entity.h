@@ -3,11 +3,18 @@
 #include <raylib-cpp.hpp>
 #include <vector>
 
+struct PlayerTrail
+{
+	Vector2 pos;
+	int opacity;
+};
+
 class Entity
 {
   protected:
 	raylib::Texture2D texture;
 	raylib::Vector2 position;
+  int health;
 
 	// Grid-based movement state, shared by every entity that moves on the
 	// board. Non-moving entities just leave these at their defaults.
@@ -19,6 +26,8 @@ class Entity
   public:
 	Entity() = default;
 	Entity(raylib::Vector2 startPos) : position(startPos) {}
+  Vector2 GetPosition() { return position; };
+  float GetHealth() { return health; };
 	virtual ~Entity() = default;
 
 	virtual void Update() = 0;
@@ -35,12 +44,26 @@ class Player : public Entity
 
 	void Update() override;
 	void Draw() override;
+
+  void Hurt(float amount);
+  void Knockback(Vector2 Knockback);
+
 	Vector2 gridPosition;
 
   protected:
 	float lerpSpeed = 0.2f;
 	float moveCooldown = 0.25f;
 	float currentMoveCooldown = 0;
+  
+  PlayerTrail trail[120] = {0};
+  PlayerTrail punchTrail[40] = {0};
+
+  bool movedThisFrame = false;
+  bool attackedThisFrame = false;
+  float hitAnimationTime = 1000;
+  Vector2 currentDirection = Vector2(1, 0);
+  Vector2 handpos;
+  float peakThreshold = 0;
 };
 
 class Enemy : public Entity
@@ -80,15 +103,29 @@ private:
 class ClockHand : public Entity
 {
   public:
+	float GetAngle();
 	ClockHand(raylib::Vector2 pivot, float angleDeg, float length, float thickness, Color color);
 	~ClockHand(void);
 
 	void Update() override;
 	void Draw() override;
+	void Advance();
+	void BeginBigDeadlySpin();
+  Vector2 GetLargeExtendedPoint();
+
+  bool activated = false;
 
   protected:
 	float angleDeg;
 	float length;
 	float thickness;
 	Color color;
+  
+  float bigDeadlySpinTime = 0;
+  float bigDeadlySpinCoefficient = 40;
+  bool inBigDeadlySpin = false;
+
+
+  float advanceTime = 0;
+  bool isAdvancing = false;
 };
