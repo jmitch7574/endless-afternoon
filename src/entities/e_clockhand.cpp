@@ -63,5 +63,5 @@ Vector2 ClockHand::GetLargeExtendedPoint()
 
 float ClockHand::GetAngle()
 {
-  return angleDeg + bigDeadlySpinTime * bigDeadlySpinCoefficient;
+  return fmod(angleDeg + bigDeadlySpinTime * bigDeadlySpinCoefficient, 360.0f);
 }

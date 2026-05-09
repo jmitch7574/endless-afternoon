@@ -5,12 +5,13 @@
 #include <raylib-cpp.hpp>
 #include "arena_manager.h"
 #include "custom_draws.h"
+#include "utils.h"
 
 PlayMode *playScene;
 
 PlayMode::PlayMode()
 	: player(Vector2{10, 10}), enemy(Vector2{5, 5}), minuteHand(Vector2{960, 540}, -90.0f, 440.0f, 8.0f, WHITE),
-	  hourHand(Vector2{960, 540}, 0.0f, 280.0f, 12.0f, WHITE)
+	  hourHand(Vector2{960, 540}, -90.0f, 280.0f, 12.0f, WHITE)
 {
 	playScene = this;
 }
@@ -32,16 +33,11 @@ void PlayMode::Update()
 
   // Special Check - Is the player in the evil zone
 
-  bool collision = CheckCollisionPointPoly(
-    player.GetPosition(),
-    new Vector2[]{
-      minuteHand.GetPosition(), 
-      minuteHand.GetLargeExtendedPoint(), 
-      Vector2Scale(Vector2Normalize(Vector2Scale(Vector2Add(minuteHand.GetLargeExtendedPoint(),  hourHand.GetLargeExtendedPoint()), 0.5f)), 10000), 
-      hourHand.GetLargeExtendedPoint()
-    },
-    4
-  );
+  float playerAngleToCenter = Utils::Vector2ToAngle(Vector2Normalize(Vector2Subtract(player.GetPosition(),minuteHand.GetPosition())));
+
+  playerAngleToCenter = fmod(playerAngleToCenter, 360.0f);
+
+  bool collision = minuteHand.GetAngle() > playerAngleToCenter && playerAngleToCenter > hourHand.GetAngle();
 
   timeSinceEvilZoneTick += GetFrameTime();
 
