@@ -30,7 +30,7 @@ void DangerEffects::Update()
 
   SFXTimer += GetFrameTime();
 
-  targetVolume = 0.70f - playScene->player.GetHealth() / 70.0f;
+  targetVolume = 0.8f - playScene->player.GetHealth() / 80.0f;
   targetVolume = std::max(targetVolume, 0.0f);
 
   volume = Lerp(volume, targetVolume, 0.01f);
