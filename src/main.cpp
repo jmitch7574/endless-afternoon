@@ -6,6 +6,7 @@
 #include "scene_manager.h"
 #include "renderer.h"
 #include <chrono>
+#include "resource_loader.h"
 
 int renderTextureWidth = 1920;
 int renderTextureHeight = 1080;
@@ -35,6 +36,9 @@ int main()
   SetWindowState(FLAG_WINDOW_UNDECORATED);
   SetWindowSize(GetMonitorWidth(0), GetMonitorHeight(0));
   SetWindowPosition(0, 0);
+
+	InitAudioDevice();
+	Resources::Load();
 
   while (!window.ShouldClose())
   {

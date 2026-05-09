@@ -1,5 +1,6 @@
 #pragma once
 #include "entity.h"
+#include "danger_effects.h"
 
 class Scene
 {
@@ -54,6 +55,7 @@ class PlayMode : public Scene
 	Enemy enemy;
 	ClockHand minuteHand;
 	ClockHand hourHand;
+	DangerEffects dangerEffects;
 
   private:
 	void BeginVictory();

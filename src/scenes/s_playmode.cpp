@@ -9,12 +9,13 @@
 #include "arena_manager.h"
 #include "custom_draws.h"
 #include "utils.h"
+#include "danger_effects.h"
 
 PlayMode *playScene;
 
 PlayMode::PlayMode()
 	: player(Vector2{10, 10}), enemy(Vector2{5, 5}), minuteHand(Vector2{960, 540}, -90.0f, 440.0f, 8.0f, WHITE),
-	  hourHand(Vector2{960, 540}, -90.0f, 280.0f, 12.0f, WHITE)
+	  hourHand(Vector2{960, 540}, -90.0f, 280.0f, 12.0f, WHITE), dangerEffects()
 {
 	playScene = this;
 }
@@ -107,6 +108,8 @@ void PlayMode::Update()
 	{
 		BeginGameOver();
 	}
+
+  dangerEffects.Update();
 }
 void PlayMode::Draw()
 {
@@ -131,6 +134,8 @@ void PlayMode::Draw()
 	DrawEnemyHealthBar();
 
 	CustomDraws::DrawArrow(Vector2(400, 400), 0, 200, 10, 50, 90, GOLD);
+
+  dangerEffects.Draw();
 
 #ifndef NDEBUG
 	DrawText(TextFormat("Player Pos: %f, %f", player.gridPosition.x, player.gridPosition.y), 20, 20, 20, WHITE);

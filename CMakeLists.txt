@@ -67,3 +67,13 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 )
 
 set(CMAKE_CXX_FLAGS_ARCADEMIA "${CMAKE_CXX_FLAGS_RELEASE}")
+
+# Copy Resources
+
+file(GLOB_RECURSE RESOURCE_FILES "${CMAKE_SOURCE_DIR}/resources/*")
+
+add_custom_command(TARGET endless_afternoon POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/resources
+        $<TARGET_FILE_DIR:endless_afternoon>/resources
+)
