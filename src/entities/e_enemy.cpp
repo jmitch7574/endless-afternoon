@@ -1,5 +1,5 @@
 #include "entity.h"
-#include "grid_manager.h"
+#include "arena_manager.h"
 
 Enemy::Enemy(raylib::Vector2 startPos) : Entity(startPos), normalAttacksRemaining(normalAttacksPerCycle)
 {
