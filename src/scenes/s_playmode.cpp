@@ -3,7 +3,6 @@
 #include <cmath>
 #include <raylib-cpp.hpp>
 
-
 PlayMode::PlayMode()
 	: player(Vector2{10, 10}), enemy(Vector2{1085, 415}), minuteHand(Vector2{960, 540}, -90.0f, 440.0f, 8.0f, WHITE),
 	  hourHand(Vector2{960, 540}, 0.0f, 280.0f, 12.0f, WHITE)
@@ -23,7 +22,7 @@ void PlayMode::Draw()
 	ClearBackground(BLACK);
 	ArenaManager::DrawLevelGrid();
 	ArenaManager::MaskOutsideOctagon();
-	ArenaManager::DrawLevelBoundary();
+	ArenaManager::DrawOctagonBoundary();
 	ArenaManager::DrawClockMarkers();
 	hourHand.Draw();
 	minuteHand.Draw();

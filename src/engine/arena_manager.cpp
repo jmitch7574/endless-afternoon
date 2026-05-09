@@ -1,122 +1,138 @@
 #include "arena_manager.h"
-#include "raylib-cpp.hpp"
+#include "raymath.h"
 #include "renderer.h"
+#include <cmath>
 
-void ArenaManager::DrawLevelGrid()
+// Grid layout
+#define GRID_TOTAL_SIZE_PX (CELL_SIZE * CELL_COUNT)
+#define GRID_CENTER Vector2(RENDER_TEXTURE_WIDTH / 2.0f, RENDER_TEXTURE_HEIGHT / 2.0f)
+#define GRID_ORIGIN_X (GRID_CENTER.x - GRID_TOTAL_SIZE_PX / 2.0f)
+#define GRID_ORIGIN_Y (GRID_CENTER.y - GRID_TOTAL_SIZE_PX / 2.0f)
+#define GRID_HALF_SIZE (GRID_TOTAL_SIZE_PX / 2.0f)
+
+// Octagon shape
+#define OCTAGON_FLAT_EDGE_CELLS 9
+#define OCTAGON_CORNER_CUT_CELLS 6
+#define OCTAGON_HALF_FLAT_EDGE_PX ((OCTAGON_FLAT_EDGE_CELLS * CELL_SIZE) / 2.0f)
+
+// Octagon/grid masking bounds
+#define BOUNDS_LEFT (GRID_CENTER.x - GRID_HALF_SIZE)
+#define BOUNDS_RIGHT (GRID_CENTER.x + GRID_HALF_SIZE)
+#define BOUNDS_TOP (GRID_CENTER.y - GRID_HALF_SIZE)
+#define BOUNDS_BOTTOM (GRID_CENTER.y + GRID_HALF_SIZE)
+
+namespace
 {
+struct OctagonBounds
+{
+	float left, right, top, bottom;
+	float flatLeft, flatRight, flatTop, flatBottom;
+};
 
-	const float endX = START_X + TOTAL_SIZE;
-	const float endY = START_Y + TOTAL_SIZE;
-	const Color gridColor = Fade(WHITE, 0.3f);
-
-	for (int i = 0; i <= CELL_COUNT; i++) {
-		float offset = i * CELL_SIZE;
-		DrawLineV(Vector2{START_X + offset, START_Y},
-				  Vector2{START_X + offset, endY}, gridColor);
-		DrawLineV(Vector2{START_X, START_Y + offset},
-				  Vector2{endX, START_Y + offset}, gridColor);
-	}
+OctagonBounds GetOctagonBounds()
+{
+	const float cornerSize = OCTAGON_CORNER_CUT_CELLS * CELL_SIZE;
+	const float left = GRID_ORIGIN_X;
+	const float right = GRID_ORIGIN_X + GRID_TOTAL_SIZE_PX;
+	const float top = GRID_ORIGIN_Y;
+	const float bottom = GRID_ORIGIN_Y + GRID_TOTAL_SIZE_PX;
+	return {left, right, top, bottom, left + cornerSize, right - cornerSize, top + cornerSize, bottom - cornerSize};
 }
+
+float GetOctagonEdgeDistance(float angle)
+{
+	const float x = fabsf(cosf(angle));
+	const float y = fabsf(sinf(angle));
+	const float diagonalLimit = GRID_HALF_SIZE + OCTAGON_HALF_FLAT_EDGE_PX;
+
+	float distance = diagonalLimit / (x + y);
+	if (x > 0.0f)
+		distance = fminf(distance, GRID_HALF_SIZE / x);
+	if (y > 0.0f)
+		distance = fminf(distance, GRID_HALF_SIZE / y);
+
+	return distance;
+}
+} // namespace
 
 Vector2 ArenaManager::GridPositionToWorld(Vector2 GridPos)
 {
-	return Vector2Add(Vector2(START_X + CELL_SIZE / 2, START_Y + CELL_SIZE / 2),
-					  Vector2Scale(GridPos, CELL_SIZE));
+	return Vector2Add(Vector2(GRID_ORIGIN_X + CELL_SIZE / 2, GRID_ORIGIN_Y + CELL_SIZE / 2), Vector2Scale(GridPos, CELL_SIZE));
 }
 
 bool ArenaManager::IsValidGridPosition(Vector2 worldPosition)
 {
-	float dx = fabsf(worldPosition.x - CENTER_POINT.x);
-	float dy = fabsf(worldPosition.y - CENTER_POINT.y);
+	float dx = fabsf(worldPosition.x - GRID_CENTER.x);
+	float dy = fabsf(worldPosition.y - GRID_CENTER.y);
 
-	// 1. bounding square
-	if (dx > APOTHEM || dy > APOTHEM)
+	if (dx > GRID_HALF_SIZE || dy > GRID_HALF_SIZE)
 		return false;
 
-	// 2. cut off corners (this replaces the triangles)
-	if (dx + dy + 20.0f > APOTHEM + HALF_FLAT)
+	if (dx + dy > GRID_HALF_SIZE + OCTAGON_HALF_FLAT_EDGE_PX)
 		return false;
 
 	return true;
 }
 
-void ArenaManager::DrawLevelBoundary()
+void ArenaManager::DrawLevelGrid()
 {
-	DrawPolyLinesEx(Vector2{960, 540}, 8, 500.0f, 22.5f, 4.0f, WHITE);
+	const float endX = GRID_ORIGIN_X + GRID_TOTAL_SIZE_PX;
+	const float endY = GRID_ORIGIN_Y + GRID_TOTAL_SIZE_PX;
+
+	const Color gridColor = Fade(WHITE, 0.3f);
+
+	for (int i = 0; i <= CELL_COUNT; i++)
+	{
+		float offset = i * CELL_SIZE;
+		DrawLineV(Vector2{GRID_ORIGIN_X + offset, GRID_ORIGIN_Y}, Vector2{GRID_ORIGIN_X + offset, endY}, gridColor);
+		DrawLineV(Vector2{GRID_ORIGIN_X, GRID_ORIGIN_Y + offset}, Vector2{endX, GRID_ORIGIN_Y + offset}, gridColor);
+	}
+}
+
+void ArenaManager::DrawOctagonBoundary()
+{
+  const auto b = GetOctagonBounds();
+  const Vector2 vertices[8] = {{b.flatLeft, b.top},	  {b.flatRight, b.top},	   {b.right, b.flatTop},
+                 {b.right, b.flatBottom}, {b.flatRight, b.bottom}, {b.flatLeft, b.bottom},
+                 {b.left, b.flatBottom},  {b.left, b.flatTop}};
+
+  for (int i = 0; i < 8; i++)
+  {
+    DrawLineEx(vertices[i], vertices[(i + 1) % 8], 4.0f, WHITE);
+  }
 }
 
 void ArenaManager::MaskOutsideOctagon()
 {
-	// Black out everything outside the octagon. Two parts:
-	//  1. Four rectangles outside the octagon's bounding box
-	//  (top/bottom/left/right).
-	//  2. Four triangles inside the bounding box but outside the octagon's
-	//     diagonal edges (the bounding-box corners).
+	const auto b = GetOctagonBounds();
 
-	// Strips outside the bounding box
-	// TOP
-	DrawRectangleRec(Rectangle{0, 0, RENDER_TEXTURE_WIDTH, BB_TOP}, BLACK);
-
-	// BOTTOM
-	DrawRectangleRec(Rectangle{0, RENDER_TEXTURE_HEIGHT - BB_BOTTOM,
-							   RENDER_TEXTURE_WIDTH, BB_BOTTOM},
+	DrawRectangleRec(Rectangle{0, 0, (float)RENDER_TEXTURE_WIDTH, BOUNDS_TOP}, BLACK);
+	DrawRectangleRec(Rectangle{0, BOUNDS_BOTTOM, (float)RENDER_TEXTURE_WIDTH, (float)RENDER_TEXTURE_HEIGHT - BOUNDS_BOTTOM},
+					 BLACK);
+	DrawRectangleRec(Rectangle{0, 0, BOUNDS_LEFT, (float)RENDER_TEXTURE_HEIGHT}, BLACK);
+	DrawRectangleRec(Rectangle{BOUNDS_RIGHT, 0, (float)RENDER_TEXTURE_WIDTH - BOUNDS_RIGHT, (float)RENDER_TEXTURE_HEIGHT},
 					 BLACK);
 
-	// LEFT
-	DrawRectangleRec(Rectangle{0, 0, BB_LEFT, RENDER_TEXTURE_HEIGHT}, BLACK);
-
-	// RIGHT
-	DrawRectangleRec(Rectangle{RENDER_TEXTURE_WIDTH - BB_RIGHT, 0, BB_RIGHT,
-							   RENDER_TEXTURE_HEIGHT},
-					 BLACK);
-
-	// Corner triangles (vertices in screen-CCW order so raylib renders them).
-	// Top-right
-	DrawTriangle(Vector2{CENTER_POINT.x + APOTHEM, CENTER_POINT.y - APOTHEM},
-				 Vector2{CENTER_POINT.x + HALF_FLAT, CENTER_POINT.y - APOTHEM},
-				 Vector2{CENTER_POINT.x + APOTHEM, CENTER_POINT.y - HALF_FLAT},
-				 BLACK);
-	// Top-left
-	DrawTriangle(Vector2{CENTER_POINT.x - APOTHEM, CENTER_POINT.y - APOTHEM},
-				 Vector2{CENTER_POINT.x - APOTHEM, CENTER_POINT.y - HALF_FLAT},
-				 Vector2{CENTER_POINT.x - HALF_FLAT, CENTER_POINT.y - APOTHEM},
-				 BLACK);
-	// Bottom-right
-	DrawTriangle(Vector2{CENTER_POINT.x + APOTHEM, CENTER_POINT.y + APOTHEM},
-				 Vector2{CENTER_POINT.x + APOTHEM, CENTER_POINT.y + HALF_FLAT},
-				 Vector2{CENTER_POINT.x + HALF_FLAT, CENTER_POINT.y + APOTHEM},
-				 BLACK);
-	// Bottom-left
-	DrawTriangle(Vector2{CENTER_POINT.x - APOTHEM, CENTER_POINT.y + APOTHEM},
-				 Vector2{CENTER_POINT.x - HALF_FLAT, CENTER_POINT.y + APOTHEM},
-				 Vector2{CENTER_POINT.x - APOTHEM, CENTER_POINT.y + HALF_FLAT},
-				 BLACK);
+	DrawTriangle(Vector2{b.right, b.top}, Vector2{b.flatRight, b.top}, Vector2{b.right, b.flatTop}, BLACK);
+	DrawTriangle(Vector2{b.left, b.top}, Vector2{b.left, b.flatTop}, Vector2{b.flatLeft, b.top}, BLACK);
+	DrawTriangle(Vector2{b.right, b.bottom}, Vector2{b.right, b.flatBottom}, Vector2{b.flatRight, b.bottom}, BLACK);
+	DrawTriangle(Vector2{b.left, b.bottom}, Vector2{b.flatLeft, b.bottom}, Vector2{b.left, b.flatBottom}, BLACK);
 }
+
 
 void ArenaManager::DrawClockMarkers()
 {
-	// 12 filled white circles at the clock hour positions, sat just outside
-	// the octagon. The octagon's edge distance varies with angle (apothem
-	// along the cardinals, longer along the diagonals), so each marker is
-	// positioned relative to the actual edge it's nearest to.
+	const float gap = 30.0f;
+	const float markerRadius = 12.0f;
 
-	const float gap = 30.0f;		  // how far past the edge
-	const float markerRadius = 12.0f; // size of each clock dot
-
-	for (int h = 1; h <= 12; h++) {
-		// Hour h sits at angle (h * 30° - 90°): 12 at top, 3 at right, etc.
+	for (int h = 1; h <= 12; h++)
+	{
 		const float angle = (h * 30.0f - 90.0f) * DEG2RAD;
+		const float boundaryDist = GetOctagonEdgeDistance(angle);
 
-		// Distance from center to the octagon edge along this angle.
-		// Edge midpoints are at multiples of 45°; the relevant edge is the
-		// one whose midpoint angle is nearest to `angle`.
-		const float quarterPi = PI / 4.0f;
-		const float nearestEdgeAngle = roundf(angle / quarterPi) * quarterPi;
-		const float boundaryDist = APOTHEM / cosf(angle - nearestEdgeAngle);
+		const Vector2 pos = {GRID_CENTER.x + (boundaryDist + gap) * cosf(angle),
+							 GRID_CENTER.y + (boundaryDist + gap) * sinf(angle)};
 
-		const Vector2 pos = {
-			CENTER_POINT.x + (boundaryDist + gap) * cosf(angle),
-			CENTER_POINT.y + (boundaryDist + gap) * sinf(angle)};
 		DrawCircleV(pos, markerRadius, WHITE);
 	}
 }
