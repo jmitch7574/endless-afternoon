@@ -4,6 +4,7 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 #include <iostream>
+#include <keybinds.h>
 
 #define TITLE_SIZE 96
 
@@ -18,7 +19,7 @@ MainMenu::~MainMenu(void) {}
 
 void MainMenu::Update()
 {
-  acceptPressed = IsKeyPressed(KEY_Z);
+  acceptPressed = IsKeyPressed(ACCEPT);
 
   if (IsKeyPressed(KEY_RIGHT)) {
     MenuOption = 1;
