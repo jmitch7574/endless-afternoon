@@ -1,7 +1,5 @@
 #pragma once
-#include <functional>
 #include <raylib-cpp.hpp>
-#include <vector>
 
 class Entity
 {
@@ -9,8 +7,6 @@ class Entity
 	raylib::Texture2D texture;
 	raylib::Vector2 position;
 
-	// Grid-based movement state, shared by every entity that moves on the
-	// board. Non-moving entities just leave these at their defaults.
 	Vector2 gridPosition;
 	float lerpSpeed = 0.2f;
 	float moveCooldown = 0.25f;
@@ -43,38 +39,73 @@ class Player : public Entity
 	float currentMoveCooldown = 0;
 };
 
+enum class EnemyState
+{
+	Idle,
+	Advance,
+	WindUp,
+	Attack,
+	Recover
+};
+
 class Enemy : public Entity
 {
   public:
-	Enemy(raylib::Vector2 startPos);
+	// Constructor / Destructor
+	Enemy(raylib::Vector2 startGridPos);
 	~Enemy(void);
 
+	// Update / Draw
 	void Update() override;
 	void Draw() override;
 
-  // Trigger the next attack — fires a normal until the cycle's normals are
-  // exhausted, then a special. After each special, advance to the next one
-  // in `specialAttacks`, wrapping at the end.
-  void PerformNextAttack();
-  
-  // Is the enemy within grid space or float space
-  bool isInGrid;
+	// Getters / Setters
+	void SetTargetGridPosition(Vector2 target);
+	EnemyState GetState() const;
+	const char *GetStateName() const;
+	int GetChaseMovesTaken() const;
+	int GetChaseBudget() const;
+	int GetNormalAttackCount() const;
+	int GetNormalAttacksPerCycle() const;
+	bool OccupiesGridPosition(Vector2 target) const;
 
-  Rectangle GetBBoxWorld();
-private:
-  void NormalAttack();
-  void SpecialAttackOne();
-  void SpecialAttackTwo();
+	// Collision / Grid-based movement
+	bool isInGrid;
+	Vector2 gridPosition;
+	Rectangle GetBBoxWorld();
 
-	// Specials fire in the order they appear in this list, then wrap. To add
-	// another, declare/define the method and push a lambda for it onto this
-	// vector in the constructor — nothing else needs to change.
-	std::vector<std::function<void()>> specialAttacks;
-	size_t nextSpecialIndex = 0;
+  private:
+	void EnterState(EnemyState nextState);
+	void EnterRecover(float duration);
+	void TriggerPunchEffect();
+	void UpdatePunchEffect(float deltaTime);
+	void DrawPunchEffect();
+	Vector2 GetPunchDirectionToTarget() const;
 
+	// State
+	EnemyState currentState = EnemyState::Idle;
+
+	// Movement
+	Vector2 targetGridPosition;
+	float lerpSpeed = 0.2f;
+	float moveCooldown = 0.5f;
+	float currentMoveCooldown = 0;
+	int aggroRange = 6;
+	int chaseBudget = 6;
+	int chaseMovesTaken = 0;
+
+	// WindUp / Attack
+	float stateTimer = 0;
+	int attackTargetX = 0;
+	int attackTargetY = 0;
+	float punchAnimationTime = 1000.0f;
+	float punchPeakThreshold = 0.0f;
+	Vector2 punchDirection = Vector2{1.0f, 0.0f};
+	Vector2 punchHandPosition = Vector2{0.0f, 0.0f};
+
+	// Attack cycle
+	int normalAttackCount = 0;
 	int normalAttacksPerCycle = 3;
-	int normalAttacksRemaining; // initialised from normalAttacksPerCycle in
-								// ctor
 };
 
 class ClockHand : public Entity

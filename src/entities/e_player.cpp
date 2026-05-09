@@ -146,15 +146,16 @@ void Player::TryMove(Vector2 dir) {
   if (currentMoveCooldown > 0) return;
   if (attackedThisFrame) return;
 
-  Vector2 hypotheticalWorldPos = ArenaManager::GridPositionToWorld(Vector2Add(gridPosition, dir));
+  Vector2 nextGridPosition = Vector2Add(gridPosition, dir);
+  Vector2 hypotheticalWorldPos = ArenaManager::GridPositionToWorld(nextGridPosition);
 
   if (!ArenaManager::IsValidGridPosition(hypotheticalWorldPos)) return;
 
   movedThisFrame = true;
 
-  bool enemyCollide = CheckCollisionCircleRec(hypotheticalWorldPos, CELL_SIZE / 2.0f, playScene->enemy.GetBBoxWorld());
+  bool enemyCollide = playScene->enemy.isInGrid && playScene->enemy.OccupiesGridPosition(nextGridPosition);
   
-  if (enemyCollide && playScene->enemy.isInGrid){
+  if (enemyCollide){
     // Successful Attack
     attackedThisFrame = true;
     
