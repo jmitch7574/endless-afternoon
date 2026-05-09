@@ -476,9 +476,10 @@ void Player::TryDash(Vector2 dir)
 	dashCooldownTimer = dashCooldown;
 	dashInvulnerabilityTimer = dashInvulnerabilityDuration;
 }
-void Player::Hurt(float amount) 
+
+void Player::Hurt(float amount, DamageType type) 
 {
-  if (IsInvulnerable())
+  if (IsInvulnerable() && type != D_EvilZone)
   {
     return;
   }

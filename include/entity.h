@@ -7,6 +7,13 @@ struct PlayerTrail
 	int opacity;
 };
 
+
+typedef enum DamageType
+{
+  D_Enemy,
+  D_EvilZone
+} DamageType;
+
 class Entity
 {
   protected:
@@ -43,7 +50,7 @@ class Player : public Entity
 	void Draw() override;
 	bool IsInvulnerable() const;
 
-	void Hurt(float amount);
+	void Hurt(float amount, DamageType type);
 	void Knockback(Vector2 Knockback);
 
 	Vector2 gridPosition;

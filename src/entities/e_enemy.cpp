@@ -340,7 +340,7 @@ void Enemy::Update()
 		bool hit = currentPlayerDistance > 0 && currentPlayerDistance <= GetCurrentBasicAttackRange();
 		if (hit && playScene != nullptr)
 		{
-			playScene->player.Hurt(BASIC_ATTACK_DAMAGE);
+			playScene->player.Hurt(BASIC_ATTACK_DAMAGE, D_Enemy);
 		}
 		normalAttackCount++;
 		nextBasicAttackIsRightSwing = !currentBasicAttackIsRightSwing;
@@ -383,7 +383,7 @@ void Enemy::Update()
 			secondaryAttackHasHit = true;
 			if (playScene != nullptr)
 			{
-				playScene->player.Hurt(SECONDARY_ATTACK_DAMAGE);
+				playScene->player.Hurt(SECONDARY_ATTACK_DAMAGE, D_Enemy);
 			}
 		}
 
