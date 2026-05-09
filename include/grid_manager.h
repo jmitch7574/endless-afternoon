@@ -14,5 +14,8 @@ class GridManager {
 public:
   static void DrawLevelGrid();
   static Vector2 GridPositionToWorld(Vector2 GridPos);
+  bool IsValidGridPosition(Vector2 GridPos);
+  static void DrawLevelBoundary();
+  static void MaskOutsideOctagon();
+  static void DrawClockMarkers();
 };
-

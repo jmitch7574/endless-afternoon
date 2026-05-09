@@ -44,8 +44,4 @@ private:
   Enemy enemy;
   ClockHand minuteHand;
   ClockHand hourHand;
-
-  void DrawLevelBoundary();
-  void MaskOutsideOctagon();
-  void DrawClockMarkers();
 };
