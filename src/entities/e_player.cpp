@@ -1,12 +1,12 @@
 #include "arena_manager.h"
-#include "entity.h"
+#include "entities/enemy.h"
 #include "keybinds.h"
-#include <scene.h>
+#include "entities/player.h"
+#include "scene.h"
 #include <algorithm>
-#include <iostream>
+#include <cmath>
 #include "raylib-cpp.hpp"
 #include "utils.h"
-#include "entity.h"
 
 namespace
 {
@@ -197,7 +197,6 @@ void Player::Update()
 	dashInvulnerabilityTimer -= deltaTime;
   hitAnimationTime += deltaTime;
 
-	Vector2 gridPositionLastFrame = gridPosition;
 	if (HasPressedMovementKey())
 	{
 		const Vector2 tapDirection = GetHeldMovementDirection();
@@ -261,7 +260,7 @@ void Player::Update()
   // THE FIST
 
   
-  float hitAnimationLerp = sinf((3.5 * pow(hitAnimationTime, 0.5f)));
+  float hitAnimationLerp = sinf(3.5f * sqrtf(hitAnimationTime));
   hitAnimationLerp = std::max(hitAnimationLerp, 0.0f);
 
   Vector2 handStart = Vector2(0, 20);
@@ -360,8 +359,6 @@ void Player::TryMove(Vector2 dir) {
     // Successful Attack
     attackedThisFrame = true;
     
-    std::cout << "Enemy Attacked";
-
     hitAnimationTime = 0;
     currentDirection = moveDir;
 
@@ -483,7 +480,7 @@ void Player::Hurt(float amount)
     return;
   }
 
-  health = std::max(0, health - (int)amount);
+  health = std::max(0.0f, health - amount);
 }
 
 void Player::Knockback(Vector2 Knockback) 

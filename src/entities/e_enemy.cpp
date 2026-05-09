@@ -1,51 +1,32 @@
 #include "arena_manager.h"
-#include "custom_draws.h"
-#include "entity.h"
+#include "entities/enemy.h"
 #include "raymath.h"
-#include "scene.h"
-#include "utils.h"
 #include <algorithm>
-#include <cmath>
+#include <cstdlib>
 
 namespace
 {
-constexpr int BOSS_FOOTPRINT_HALF_CELLS = 1;
-constexpr float ATTACK_RECOVER_DURATION = 0.9f;
-constexpr float CYCLE_RECOVER_DURATION = 1.2f;
-constexpr float CHASE_TIMEOUT_RECOVER_DURATION = 0.55f;
-constexpr float PUNCH_EFFECT_DURATION = 0.75f;
-constexpr float CLOCK_HAND_SWEEP_DEGREES = 125.0f;
-constexpr int CLOCK_HAND_TRAIL_SAMPLES = 14;
-constexpr float CLOCK_HAND_TRAIL_STEP = 0.02f;
-constexpr int SECONDARY_PULSE_SEGMENTS = 96;
-constexpr float BASIC_ATTACK_DAMAGE = 20.0f;
-constexpr float SECONDARY_ATTACK_DAMAGE = 30.0f;
-
 int GridX(Vector2 cell) { return (int)cell.x; }
 
 int GridY(Vector2 cell) { return (int)cell.y; }
+} // namespace
 
-int DistanceFromBossFootprint(Vector2 bossCenter, Vector2 cell)
+int Enemy::DistanceFromBossFootprint(Vector2 bossCenter, Vector2 cell)
 {
-	const int dx = abs(GridX(cell) - GridX(bossCenter));
-	const int dy = abs(GridY(cell) - GridY(bossCenter));
+	const int dx = std::abs(GridX(cell) - GridX(bossCenter));
+	const int dy = std::abs(GridY(cell) - GridY(bossCenter));
 	const int outsideX = std::max(dx - BOSS_FOOTPRINT_HALF_CELLS, 0);
 	const int outsideY = std::max(dy - BOSS_FOOTPRINT_HALF_CELLS, 0);
 
 	return std::max(outsideX, outsideY);
 }
 
-bool BossFootprintContainsCell(Vector2 bossCenter, Vector2 cell)
+bool Enemy::BossFootprintContainsCell(Vector2 bossCenter, Vector2 cell)
 {
 	return DistanceFromBossFootprint(bossCenter, cell) == 0;
 }
 
-bool BossFootprintIsAdjacentToCell(Vector2 bossCenter, Vector2 cell)
-{
-	return DistanceFromBossFootprint(bossCenter, cell) == 1;
-}
-
-bool IsBossFootprintValid(Vector2 bossCenter)
+bool Enemy::IsBossFootprintValid(Vector2 bossCenter)
 {
 	for (int x = -BOSS_FOOTPRINT_HALF_CELLS; x <= BOSS_FOOTPRINT_HALF_CELLS; x++)
 	{
@@ -62,43 +43,9 @@ bool IsBossFootprintValid(Vector2 bossCenter)
 	return true;
 }
 
-void DrawEnemyFace(Vector2 center, float radius)
-{
-	const Rectangle leftEye = {center.x - radius * 0.52f, center.y - radius * 0.18f, radius * 0.62f, radius * 0.22f};
-	const Rectangle rightEye = {center.x + radius * 0.52f, center.y - radius * 0.18f, radius * 0.62f, radius * 0.22f};
-
-	DrawRectanglePro(leftEye, Vector2{leftEye.width * 0.5f, leftEye.height * 0.5f}, 38.0f, WHITE);
-	DrawRectanglePro(rightEye, Vector2{rightEye.width * 0.5f, rightEye.height * 0.5f}, -38.0f, WHITE);
-
-	DrawCircleV(Vector2Add(center, Vector2{-radius * 0.30f, radius * 0.03f}), radius * 0.16f, WHITE);
-	DrawCircleV(Vector2Add(center, Vector2{radius * 0.30f, radius * 0.03f}), radius * 0.16f, WHITE);
-
-	DrawCircleV(Vector2Add(center, Vector2{0.0f, radius * 0.28f}), radius * 0.13f, WHITE);
-}
-
-Color ClockHandOrange(unsigned char alpha) { return Color{196, 116, 36, alpha}; }
-
-void DrawAttackClockHand(Vector2 clockCenter, float sweepAngle, bool isRightSwing, unsigned char alpha,
-						 float lengthScale = 1.0f)
-{
-	const float faceRadius = CELL_SIZE * 1.5f;
-	const float innerRadius = faceRadius + CELL_SIZE * 0.05f;
-	const float handLength = (isRightSwing ? CELL_SIZE * 1.5f : CELL_SIZE) * lengthScale;
-	const float handThickness = isRightSwing ? CELL_SIZE * 0.14f : CELL_SIZE * 0.22f;
-	const float fletchLength = (isRightSwing ? CELL_SIZE * 0.22f : CELL_SIZE * 0.28f) * lengthScale;
-	const Vector2 sweepDirection = Utils::AngleToVector2(sweepAngle);
-	const Vector2 handPivot = Vector2Add(clockCenter, Vector2Scale(sweepDirection, innerRadius));
-
-	CustomDraws::DrawArrow(handPivot, sweepDirection, handLength, handThickness, fletchLength, 32.0f,
-						   ClockHandOrange(alpha));
-	DrawCircleV(handPivot, handThickness * 0.62f, Color{230, 148, 58, alpha});
-}
-
-} // namespace
-
 Enemy::Enemy(raylib::Vector2 startGridPos) : Entity(ArenaManager::GridPositionToWorld(startGridPos))
 {
-	health = maxHealth;
+	health = (float)maxHealth;
 	gridPosition = startGridPos;
 	targetGridPosition = startGridPos;
 	isInGrid = true;
@@ -127,6 +74,12 @@ const char *Enemy::GetStateName() const
 		return "SecondaryAttack";
 	case EnemyState::SecondaryRecover:
 		return "SecondaryRecover";
+	case EnemyState::SpecialWindUp:
+		return "SpecialWindUp";
+	case EnemyState::SpecialAttack:
+		return "SpecialAttack";
+	case EnemyState::SpecialRecover:
+		return "SpecialRecover";
 	}
 
 	return "Unknown";
@@ -144,7 +97,7 @@ int Enemy::GetMaxHealth() const { return maxHealth; }
 
 void Enemy::Hurt(float amount)
 {
-	health = std::max(0, health - (int)amount);
+	health = std::max(0.0f, health - amount);
 }
 
 void Enemy::SetTargetGridPosition(Vector2 target) { targetGridPosition = target; }
@@ -208,6 +161,16 @@ void Enemy::EnterState(EnemyState nextState)
 	case EnemyState::SecondaryRecover:
 		stateTimer = secondaryRecoverDuration;
 		break;
+	case EnemyState::SpecialWindUp:
+		currentSpecialAttack = nextSpecialAttack;
+		stateTimer = specialWindUpDuration;
+		break;
+	case EnemyState::SpecialAttack:
+		stateTimer = 0.0f;
+		break;
+	case EnemyState::SpecialRecover:
+		stateTimer = specialRecoverDuration;
+		break;
 	}
 }
 
@@ -229,14 +192,149 @@ Vector2 Enemy::GetPunchDirectionToTarget() const
 	return Vector2Normalize(targetOffset);
 }
 
-void Enemy::TriggerPunchEffect()
+void Enemy::UpdateIdle()
 {
-	punchAnimationTime = 0.0f;
-	punchDirection = GetPunchDirectionToTarget();
-	punchHookSide = currentBasicAttackIsRightSwing ? 1.0f : -1.0f;
+	EnterState(EnemyState::Advance);
 }
 
-void Enemy::UpdatePunchEffect(float deltaTime) { punchAnimationTime += deltaTime; }
+void Enemy::UpdateAdvance()
+{
+	const int dist = DistanceFromBossFootprint(gridPosition, targetGridPosition);
+	if (dist > 0 && dist <= GetNextBasicAttackRange())
+	{
+		EnterState(EnemyState::WindUp);
+		return;
+	}
+
+	if (currentMoveCooldown > 0)
+	{
+		return;
+	}
+
+	const bool isOverlappingTarget = BossFootprintContainsCell(gridPosition, targetGridPosition);
+	const Vector2 directions[] = {
+		Vector2{1.0f, 0.0f},  Vector2{-1.0f, 0.0f}, Vector2{0.0f, 1.0f},  Vector2{0.0f, -1.0f},
+		Vector2{1.0f, 1.0f},  Vector2{1.0f, -1.0f}, Vector2{-1.0f, 1.0f}, Vector2{-1.0f, -1.0f},
+	};
+	Vector2 bestNextPos = gridPosition;
+	int bestDistance = isOverlappingTarget ? -1 : dist;
+	bool foundMove = false;
+
+	for (const Vector2 &moveDir : directions)
+	{
+		const Vector2 nextPos = Vector2Add(gridPosition, moveDir);
+		if (!IsBossFootprintValid(nextPos))
+		{
+			continue;
+		}
+
+		const int nextDistance = DistanceFromBossFootprint(nextPos, targetGridPosition);
+		if (isOverlappingTarget)
+		{
+			if (!foundMove || nextDistance > bestDistance)
+			{
+				bestNextPos = nextPos;
+				bestDistance = nextDistance;
+				foundMove = true;
+			}
+		}
+		else if (!BossFootprintContainsCell(nextPos, targetGridPosition) && nextDistance < bestDistance)
+		{
+			bestNextPos = nextPos;
+			bestDistance = nextDistance;
+			foundMove = true;
+		}
+	}
+
+	if (!foundMove)
+	{
+		EnterRecover(CHASE_TIMEOUT_RECOVER_DURATION);
+		return;
+	}
+
+	gridPosition = bestNextPos;
+	chaseMovesTaken++;
+	currentMoveCooldown = moveCooldown;
+
+	if (chaseMovesTaken >= chaseBudget &&
+		DistanceFromBossFootprint(gridPosition, targetGridPosition) > GetNextBasicAttackRange())
+	{
+		EnterRecover(CHASE_TIMEOUT_RECOVER_DURATION);
+	}
+}
+
+void Enemy::UpdateWindUp(float deltaTime)
+{
+	stateTimer -= deltaTime;
+	if (stateTimer <= 0)
+	{
+		EnterState(EnemyState::Attack);
+	}
+}
+
+void Enemy::UpdateRecover(float deltaTime)
+{
+	stateTimer -= deltaTime;
+	if (stateTimer > 0)
+	{
+		return;
+	}
+
+	if (normalAttackCount < normalAttacksPerCycle)
+	{
+		EnterState(EnemyState::Advance);
+		return;
+	}
+
+	normalAttackCount = 0;
+	primaryCyclesCompleted++;
+
+	if (primaryCyclesCompleted >= primaryCyclesBeforeSpecial)
+	{
+		primaryCyclesCompleted = 0;
+		EnterState(EnemyState::SpecialWindUp);
+	}
+	else
+	{
+		EnterState(EnemyState::SecondaryWindUp);
+	}
+}
+
+void Enemy::UpdateSecondaryWindUp(float deltaTime)
+{
+	stateTimer -= deltaTime;
+	if (stateTimer <= 0)
+	{
+		EnterState(EnemyState::SecondaryAttack);
+	}
+}
+
+void Enemy::UpdateSecondaryRecover(float deltaTime)
+{
+	stateTimer -= deltaTime;
+	if (stateTimer <= 0)
+	{
+		EnterState(EnemyState::Advance);
+	}
+}
+
+void Enemy::UpdateSpecialWindUp(float deltaTime)
+{
+	stateTimer -= deltaTime;
+	if (stateTimer <= 0)
+	{
+		EnterState(EnemyState::SpecialAttack);
+	}
+}
+
+void Enemy::UpdateSpecialRecover(float deltaTime)
+{
+	stateTimer -= deltaTime;
+	if (stateTimer <= 0)
+	{
+		EnterState(EnemyState::Advance);
+	}
+}
 
 void Enemy::Update()
 {
@@ -246,282 +344,41 @@ void Enemy::Update()
 	currentMoveCooldown -= deltaTime;
 	UpdatePunchEffect(deltaTime);
 
-	int dist = DistanceFromBossFootprint(gridPosition, targetGridPosition);
-
-	switch (currentState)
-	{
-	// Idle hands off to Advance immediately; recover states create the boss's pauses.
-	case EnemyState::Idle:
-		EnterState(EnemyState::Advance);
-		break;
-
-	// Advance moves toward player, stops in attack range, and never overlaps.
-	case EnemyState::Advance:
-		if (dist > 0 && dist <= GetNextBasicAttackRange())
-		{
-			EnterState(EnemyState::WindUp);
-		}
-		else if (currentMoveCooldown <= 0)
-		{
-			const bool isOverlappingTarget = BossFootprintContainsCell(gridPosition, targetGridPosition);
-			const Vector2 directions[] = {
-				Vector2{1.0f, 0.0f},
-				Vector2{-1.0f, 0.0f},
-				Vector2{0.0f, 1.0f},
-				Vector2{0.0f, -1.0f},
-				Vector2{1.0f, 1.0f},
-				Vector2{1.0f, -1.0f},
-				Vector2{-1.0f, 1.0f},
-				Vector2{-1.0f, -1.0f},
-			};
-			Vector2 bestNextPos = gridPosition;
-			int bestDistance = isOverlappingTarget ? -1 : dist;
-			bool foundMove = false;
-
-			for (const Vector2 &moveDir : directions)
-			{
-				const Vector2 nextPos = Vector2Add(gridPosition, moveDir);
-				if (!IsBossFootprintValid(nextPos))
-				{
-					continue;
-				}
-
-				const int nextDistance = DistanceFromBossFootprint(nextPos, targetGridPosition);
-				if (isOverlappingTarget)
-				{
-					if (!foundMove || nextDistance > bestDistance)
-					{
-						bestNextPos = nextPos;
-						bestDistance = nextDistance;
-						foundMove = true;
-					}
-				}
-				else if (!BossFootprintContainsCell(nextPos, targetGridPosition) && nextDistance < bestDistance)
-				{
-					bestNextPos = nextPos;
-					bestDistance = nextDistance;
-					foundMove = true;
-				}
-			}
-
-			if (foundMove)
-			{
-				gridPosition = bestNextPos;
-				chaseMovesTaken++;
-				currentMoveCooldown = moveCooldown;
-
-				if (chaseMovesTaken >= chaseBudget &&
-					DistanceFromBossFootprint(gridPosition, targetGridPosition) > GetNextBasicAttackRange())
-				{
-					EnterRecover(CHASE_TIMEOUT_RECOVER_DURATION);
-				}
-			}
-			else
-			{
-				EnterRecover(CHASE_TIMEOUT_RECOVER_DURATION);
-			}
-		}
-		break;
-
-	// Step 5: WindUp — wait 0.5s, then attack the locked cell
-	case EnemyState::WindUp:
-		stateTimer -= deltaTime;
-		if (stateTimer <= 0)
-		{
-			EnterState(EnemyState::Attack);
-		}
-		break;
-
-	// Step 5: Attack — check if player is still on the target cell
-	case EnemyState::Attack:
-	{
-		TriggerPunchEffect();
-		const int currentPlayerDistance = DistanceFromBossFootprint(gridPosition, targetGridPosition);
-		bool hit = currentPlayerDistance > 0 && currentPlayerDistance <= GetCurrentBasicAttackRange();
-		if (hit && playScene != nullptr)
-		{
-			playScene->player.Hurt(BASIC_ATTACK_DAMAGE);
-		}
-		normalAttackCount++;
-		nextBasicAttackIsRightSwing = !currentBasicAttackIsRightSwing;
-		EnterRecover(normalAttackCount >= normalAttacksPerCycle ? CYCLE_RECOVER_DURATION : ATTACK_RECOVER_DURATION);
-		break;
-	}
-
-	// Step 5: Recover — wait 1.0s (punish window), then go back to Advance
-	case EnemyState::Recover:
-		stateTimer -= deltaTime;
-		if (stateTimer <= 0)
-		{
-			if (normalAttackCount >= normalAttacksPerCycle)
-			{
-				EnterState(EnemyState::SecondaryWindUp);
-			}
-			else
-			{
-				EnterState(EnemyState::Advance);
-			}
-		}
-		break;
-	case EnemyState::SecondaryWindUp:
-		stateTimer -= deltaTime;
-		if (stateTimer <= 0)
-		{
-			EnterState(EnemyState::SecondaryAttack);
-		}
-		break;
-	case EnemyState::SecondaryAttack:
-	{
-		stateTimer -= deltaTime;
-		const float progress = std::max(std::min(1.0f - (stateTimer / secondaryAttackDuration), 1.0f), 0.0f);
-		const float currentPulseRadius = progress * secondaryAttackRange;
-		const int playerDistance = DistanceFromBossFootprint(gridPosition, targetGridPosition);
-
-		if (!secondaryAttackHasHit && playerDistance > 0 && playerDistance <= secondaryAttackRange &&
-			(float)playerDistance > secondaryPulsePreviousRadius && (float)playerDistance <= currentPulseRadius)
-		{
-			secondaryAttackHasHit = true;
-			if (playScene != nullptr)
-			{
-				playScene->player.Hurt(SECONDARY_ATTACK_DAMAGE);
-			}
-		}
-
-		secondaryPulsePreviousRadius = currentPulseRadius;
-
-		if (stateTimer <= 0)
-		{
-			EnterState(EnemyState::SecondaryRecover);
-		}
-		break;
-	}
-	case EnemyState::SecondaryRecover:
-		stateTimer -= deltaTime;
-		if (stateTimer <= 0)
-		{
-			normalAttackCount = 0;
-			EnterState(EnemyState::Advance);
-		}
-		break;
-	}
-}
-
-void Enemy::DrawPunchEffect()
-{
-	if (punchAnimationTime >= PUNCH_EFFECT_DURATION)
-	{
-		return;
-	}
-
-	const float progress = std::max(std::min(punchAnimationTime / PUNCH_EFFECT_DURATION, 1.0f), 0.0f);
-	const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
-	const float targetAngle = Utils::Vector2ToAngle(punchDirection);
-	const float sweepStart = targetAngle - punchHookSide * (CLOCK_HAND_SWEEP_DEGREES * 0.5f);
-	const float sweepAngle = sweepStart + punchHookSide * CLOCK_HAND_SWEEP_DEGREES * easedProgress;
-	const float fadeProgress = std::max((progress - 0.72f) / 0.28f, 0.0f);
-	const unsigned char alpha = (unsigned char)(255.0f * (1.0f - fadeProgress));
-
-	for (int i = CLOCK_HAND_TRAIL_SAMPLES; i > 0; i--)
-	{
-		const float trailProgress = std::max(progress - i * CLOCK_HAND_TRAIL_STEP, 0.0f);
-		if (trailProgress <= 0.0f)
-		{
-			continue;
-		}
-
-		const float easedTrailProgress = trailProgress * trailProgress * (3.0f - 2.0f * trailProgress);
-		const float trailAngle = sweepStart + punchHookSide * CLOCK_HAND_SWEEP_DEGREES * easedTrailProgress;
-		const float trailAge = (float)i / (float)(CLOCK_HAND_TRAIL_SAMPLES + 1);
-		const float trailStrength = (1.0f - trailAge) * (1.0f - trailAge) * (1.0f - fadeProgress);
-		const unsigned char trailAlpha = (unsigned char)(115.0f * trailStrength);
-
-		DrawAttackClockHand(position, trailAngle, currentBasicAttackIsRightSwing, trailAlpha);
-	}
-
-	DrawAttackClockHand(position, sweepAngle, currentBasicAttackIsRightSwing, alpha);
-}
-
-void Enemy::DrawBasicAttackTelegraph()
-{
-	const Vector2 targetWorld = ArenaManager::GridPositionToWorld(Vector2{(float)attackTargetX, (float)attackTargetY});
-	const Rectangle targetRect = {targetWorld.x - CELL_SIZE / 2.0f, targetWorld.y - CELL_SIZE / 2.0f, CELL_SIZE,
-								  CELL_SIZE};
-	const float swingSide = currentBasicAttackIsRightSwing ? 1.0f : -1.0f;
-	const float targetAngle = Utils::Vector2ToAngle(GetPunchDirectionToTarget());
-	const float sweepStart = targetAngle - swingSide * (CLOCK_HAND_SWEEP_DEGREES * 0.5f);
-	const float windUpProgress = std::max(std::min(1.0f - (stateTimer / baseAttackWindUpDuration), 1.0f), 0.0f);
-	const float lengthScale = 0.2f + 0.8f * windUpProgress;
-
-	DrawRectangleLinesEx(targetRect, 2.0f, ClockHandOrange(255));
-	DrawAttackClockHand(position, sweepStart, currentBasicAttackIsRightSwing, 255, lengthScale);
-}
-
-void Enemy::DrawSecondaryAttackEffect()
-{
-	if (currentState != EnemyState::SecondaryAttack)
-	{
-		return;
-	}
-
-	const float progress = std::max(std::min(1.0f - (stateTimer / secondaryAttackDuration), 1.0f), 0.0f);
-	const float faceRadius = CELL_SIZE * 1.5f;
-	const float pulseRadius = faceRadius + progress * secondaryAttackRange * CELL_SIZE;
-	const float ringThickness = CELL_SIZE * 0.08f;
-	const float fadeProgress = std::max((progress - 0.72f) / 0.28f, 0.0f);
-	const unsigned char alpha = (unsigned char)(255.0f * (1.0f - fadeProgress));
-
-	DrawRing(position, pulseRadius - ringThickness, pulseRadius + ringThickness, 0.0f, 360.0f, SECONDARY_PULSE_SEGMENTS,
-			 ClockHandOrange(alpha));
-}
-
-void Enemy::Draw()
-{
-	Color bodyColor = ORANGE;
-	float radius = CELL_SIZE * 1.5f;
-
 	switch (currentState)
 	{
 	case EnemyState::Idle:
-		bodyColor = Color{180, 115, 45, 255};
+		UpdateIdle();
 		break;
 	case EnemyState::Advance:
-		bodyColor = ORANGE;
+		UpdateAdvance();
 		break;
 	case EnemyState::WindUp:
-		bodyColor = ORANGE;
+		UpdateWindUp(deltaTime);
 		break;
 	case EnemyState::Attack:
-		bodyColor = ORANGE;
+		PrimaryAttack();
 		break;
 	case EnemyState::Recover:
-		bodyColor = Fade(ORANGE, 0.45f);
+		UpdateRecover(deltaTime);
 		break;
 	case EnemyState::SecondaryWindUp:
-		bodyColor = ORANGE;
-		radius += sinf((float)GetTime() * 18.0f) * 7.0f;
+		UpdateSecondaryWindUp(deltaTime);
 		break;
 	case EnemyState::SecondaryAttack:
-		bodyColor = ORANGE;
+		SecondaryAttack(deltaTime);
 		break;
 	case EnemyState::SecondaryRecover:
-		bodyColor = Fade(ORANGE, 0.45f);
+		UpdateSecondaryRecover(deltaTime);
+		break;
+	case EnemyState::SpecialWindUp:
+		UpdateSpecialWindUp(deltaTime);
+		break;
+	case EnemyState::SpecialAttack:
+		RunSelectedSpecialAttack();
+		EnterState(EnemyState::SpecialRecover);
+		break;
+	case EnemyState::SpecialRecover:
+		UpdateSpecialRecover(deltaTime);
 		break;
 	}
-
-	DrawCircleV(position, radius + CELL_SIZE * 0.13f, WHITE);
-	DrawCircleV(position, radius, bodyColor);
-	DrawEnemyFace(position, radius);
-
-	if (currentState == EnemyState::WindUp)
-	{
-		DrawBasicAttackTelegraph();
-	}
-
-	DrawPunchEffect();
-	DrawSecondaryAttackEffect();
-}
-
-Rectangle Enemy::GetBBoxWorld()
-{
-	return Rectangle(position.x - CELL_SIZE * 1.5f, position.y - CELL_SIZE * 1.5f, CELL_SIZE * 3, CELL_SIZE * 3);
 }

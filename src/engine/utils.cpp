@@ -1,5 +1,13 @@
 #include "utils.h"
 #include "raylib-cpp.hpp"
+#include <chrono>
+
+void Utils::SeedRandom()
+{
+	const auto now = std::chrono::system_clock::now();
+	const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+	SetRandomSeed((unsigned int)seconds);
+}
 
 float Utils::Vector2ToAngle(Vector2 vec) 
 { 
