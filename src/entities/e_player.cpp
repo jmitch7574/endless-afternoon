@@ -246,6 +246,15 @@ void Player::Update()
 
 		punchTrail[i] = {trailPos, std::max(255 - (int)(hitAnimationTime * (400 - i * 5)), 0)};
 	}
+
+	// Healing
+	timeSinceLastDamage += GetFrameTime();
+
+	if (timeSinceLastDamage > healCooldown)
+	{
+		health += healRate * GetFrameTime();
+		health = fminf(health, 100);
+	}
 }
 
 void Player::Draw()
@@ -440,6 +449,8 @@ void Player::Hurt(float amount, DamageType damageType)
 	{
 		return;
 	}
+
+	timeSinceLastDamage = 0;
 
 	health = std::max(0.0f, health - amount);
 }
