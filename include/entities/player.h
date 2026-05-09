@@ -15,6 +15,7 @@ class Player : public Entity
 	~Player(void);
 
 	void TryMove(Vector2 dir);
+	void TryAttack(Vector2 dir);
 	void TryDash(Vector2 dir);
 
 	void Update() override;
@@ -30,13 +31,12 @@ class Player : public Entity
 	float lerpSpeed = 0.2f;
 	float moveCooldown = 0.25f;
 	float currentMoveCooldown = 0;
-	float dashDoubleTapWindow = 0.35f;
+	float attackCooldown = 0.75f;
+	float attackCooldownTimer = 0.0f;
 	float dashCooldown = 0.65f;
 	float dashCooldownTimer = 0.0f;
 	float dashInvulnerabilityDuration = 0.4f;
 	float dashInvulnerabilityTimer = 0.0f;
-	float lastDashTapTime = -1000.0f;
-	Vector2 lastDashTapDirection = Vector2{0.0f, 0.0f};
 	int dashRange = 3;
 
 	float healCooldown = 6;
@@ -53,6 +53,7 @@ class Player : public Entity
 	bool attackedThisFrame = false;
 	float hitAnimationTime = 1000;
 	Vector2 currentDirection = Vector2(1, 0);
+	Vector2 attackDirection = Vector2(1, 0);
 	Vector2 handpos;
 	float peakThreshold = 0;
 };

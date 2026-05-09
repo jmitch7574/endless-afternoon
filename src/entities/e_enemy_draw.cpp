@@ -24,9 +24,9 @@ void Enemy::DrawAttackClockHand(Vector2 clockCenter, float sweepAngle, bool isRi
 {
 	const float faceRadius = CELL_SIZE * 1.5f;
 	const float innerRadius = faceRadius + CELL_SIZE * 0.05f;
-	const float handLength = (isRightSwing ? CELL_SIZE * 1.5f : CELL_SIZE) * lengthScale;
+	const float handLength = (isRightSwing ? CELL_SIZE * 2.0f : CELL_SIZE) * lengthScale;
 	const float handThickness = isRightSwing ? CELL_SIZE * 0.14f : CELL_SIZE * 0.22f;
-	const float fletchLength = (isRightSwing ? CELL_SIZE * 0.22f : CELL_SIZE * 0.28f) * lengthScale;
+	const float fletchLength = (isRightSwing ? CELL_SIZE * 0.24f : CELL_SIZE * 0.28f) * lengthScale;
 	const Vector2 sweepDirection = Utils::AngleToVector2(sweepAngle);
 	const Vector2 handPivot = Vector2Add(clockCenter, Vector2Scale(sweepDirection, innerRadius));
 
@@ -89,6 +89,13 @@ void Enemy::DrawBasicAttackTelegraph()
 
 void Enemy::DrawSecondaryAttackEffect()
 {
+	if (currentSecondaryAttack == 2 &&
+		(currentState == EnemyState::SecondaryWindUp || currentState == EnemyState::SecondaryAttack))
+	{
+		DrawSpinningSecondaryAttackEffect();
+		return;
+	}
+
 	if (currentState != EnemyState::SecondaryAttack)
 	{
 		return;
@@ -103,6 +110,35 @@ void Enemy::DrawSecondaryAttackEffect()
 
 	DrawRing(position, pulseRadius - ringThickness, pulseRadius + ringThickness, 0.0f, 360.0f, SECONDARY_PULSE_SEGMENTS,
 			 ClockHandOrange(alpha));
+}
+
+void Enemy::DrawSpinningSecondaryAttackEffect()
+{
+	float angle = spinningSecondarySpinAngle;
+	float lengthScale = 1.0f;
+	unsigned char alpha = 255;
+
+	if (currentState == EnemyState::SecondaryWindUp)
+	{
+		const float progress = std::max(std::min(1.0f - (stateTimer / secondaryWindUpDuration), 1.0f), 0.0f);
+		lengthScale = 0.25f + 0.75f * progress;
+		angle += spinningSecondarySpinDirection * 70.0f * progress;
+		alpha = (unsigned char)(160.0f + 95.0f * progress);
+	}
+	else
+	{
+		for (int i = 8; i > 0; i--)
+		{
+			const float trailAge = (float)i / 9.0f;
+			const float trailAngle = angle - spinningSecondarySpinDirection * i * 14.0f;
+			const unsigned char trailAlpha = (unsigned char)(95.0f * (1.0f - trailAge));
+			DrawAttackClockHand(position, trailAngle, false, trailAlpha);
+			DrawAttackClockHand(position, trailAngle + 180.0f, true, trailAlpha);
+		}
+	}
+
+	DrawAttackClockHand(position, angle, false, alpha, lengthScale);
+	DrawAttackClockHand(position, angle + 180.0f, true, alpha, lengthScale);
 }
 
 void Enemy::Draw()

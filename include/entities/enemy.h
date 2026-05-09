@@ -45,8 +45,8 @@ class Enemy : public Entity
   private:
 	// Shared tuning
 	static constexpr int BOSS_FOOTPRINT_HALF_CELLS = 1;
-	static constexpr float ATTACK_RECOVER_DURATION = 0.9f;
-	static constexpr float CYCLE_RECOVER_DURATION = 1.2f;
+	static constexpr float ATTACK_RECOVER_DURATION = 0.25f;
+	static constexpr float CYCLE_RECOVER_DURATION = 0.35f;
 	static constexpr float CHASE_TIMEOUT_RECOVER_DURATION = 0.55f;
 	static constexpr float PUNCH_EFFECT_DURATION = 0.75f;
 	static constexpr float CLOCK_HAND_SWEEP_DEGREES = 125.0f;
@@ -61,6 +61,7 @@ class Enemy : public Entity
 	void EnterRecover(float duration);
 	void UpdateIdle();
 	void UpdateAdvance();
+	bool TryMoveTowardTarget();
 	void UpdateWindUp(float deltaTime);
 	void UpdateRecover(float deltaTime);
 	void UpdateSecondaryWindUp(float deltaTime);
@@ -69,10 +70,15 @@ class Enemy : public Entity
 	void UpdateSpecialRecover(float deltaTime);
 
 	// Attack behavior
+	void TryPrimaryAttack();
 	void TriggerPunchEffect();
 	void UpdatePunchEffect(float deltaTime);
 	void PrimaryAttack();
+	void CompletePrimaryAttackCycle();
 	void SecondaryAttack(float deltaTime);
+	void PulseSecondaryAttack(float deltaTime);
+	void SpinningTopSecondaryAttack(float deltaTime);
+	void FinishSecondaryAttack();
 	void RunSelectedSpecialAttack();
 	void SpecialAttack1();
 	void SpecialAttack2();
@@ -82,6 +88,7 @@ class Enemy : public Entity
 	void DrawPunchEffect();
 	void DrawBasicAttackTelegraph();
 	void DrawSecondaryAttackEffect();
+	void DrawSpinningSecondaryAttackEffect();
 
 	// Targeting
 	Vector2 GetPunchDirectionToTarget() const;
@@ -111,10 +118,14 @@ class Enemy : public Entity
 
 	// WindUp / Attack
 	float stateTimer = 0;
-	float baseAttackWindUpDuration = 1.1f;
+	float baseAttackWindUpDuration = 0.65f;
 	int attackTargetX = 0;
 	int attackTargetY = 0;
 	float punchAnimationTime = 1000.0f;
+	float primaryAttackCooldown = 1.3f;
+	float primaryAttackMovementLockDuration = 0.0f;
+	float primaryAttackMovementLockTimer = 0.0f;
+	float currentPrimaryAttackCooldown = 0.0f;
 	Vector2 punchDirection = Vector2{1.0f, 0.0f};
 	float punchHookSide = 1.0f;
 	bool nextBasicAttackIsRightSwing = true;
@@ -123,12 +134,22 @@ class Enemy : public Entity
 	int minuteHandAttackRange = 2;
 	float secondaryWindUpDuration = 1.4f;
 	float secondaryAttackDuration = 0.9f;
-	float secondaryRecoverDuration = 0.7f;
+	float secondaryRecoverDuration = 0.45f;
 	int secondaryAttackRange = 3;
 	bool secondaryAttackHasHit = false;
 	float secondaryPulsePreviousRadius = 0.0f;
+	int currentSecondaryAttack = 1;
+	int nextSecondaryAttack = 1;
+	float spinningSecondaryAttackDuration = 5.0f;
+	float spinningSecondarySpinAngle = 0.0f;
+	float spinningSecondarySpinSpeed = 380.0f;
+	float spinningSecondaryDamageCooldown = 0.0f;
+	float spinningSecondaryDamageInterval = 0.55f;
+	int spinningSecondarySpinDirection = 1;
+	static constexpr float SPINNING_SECONDARY_DAMAGE = 10.0f;
+	static constexpr int SPINNING_SECONDARY_RANGE = 2;
 	float specialWindUpDuration = 1.6f;
-	float specialRecoverDuration = 10.0f;
+	float specialRecoverDuration = 0.65f;
 	int currentSpecialAttack = 2;
 	int nextSpecialAttack = 2;
 

@@ -41,10 +41,10 @@ void DrawResultClockPlate()
 		const float angle = (h * 30.0f - 90.0f) * DEG2RAD;
 		const float outerRadius = 232.0f;
 		const float markerLength = h % 3 == 0 ? 30.0f : 17.0f;
-		const Vector2 outer = Vector2{SCREEN_CENTER.x + cosf(angle) * outerRadius, SCREEN_CENTER.y + sinf(angle) * outerRadius};
-		const Vector2 inner =
-			Vector2{SCREEN_CENTER.x + cosf(angle) * (outerRadius - markerLength),
-					SCREEN_CENTER.y + sinf(angle) * (outerRadius - markerLength)};
+		const Vector2 outer =
+			Vector2{SCREEN_CENTER.x + cosf(angle) * outerRadius, SCREEN_CENTER.y + sinf(angle) * outerRadius};
+		const Vector2 inner = Vector2{SCREEN_CENTER.x + cosf(angle) * (outerRadius - markerLength),
+									  SCREEN_CENTER.y + sinf(angle) * (outerRadius - markerLength)};
 		DrawLineEx(inner, outer, h % 3 == 0 ? 7.0f : 4.0f, WHITE);
 	}
 
@@ -61,7 +61,7 @@ VictoryScreen::~VictoryScreen() {}
 
 void VictoryScreen::Update()
 {
-	if (IsKeyPressed(ACCEPT))
+	if (IsKeyPressed(PRIMARY))
 	{
 		g_SceneManager.SetScene(std::make_unique<PlayMode>());
 	}
