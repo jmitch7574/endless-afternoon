@@ -53,7 +53,11 @@ public:
   // exhausted, then a special. After each special, advance to the next one
   // in `specialAttacks`, wrapping at the end.
   void PerformNextAttack();
+  
+  // Is the enemy within grid space or float space
+  bool isInGrid;
 
+  Rectangle GetBBoxWorld();
 private:
   void NormalAttack();
   void SpecialAttackOne();

@@ -1,6 +1,8 @@
 #include "entity.h"
 #include "grid_manager.h"
 #include "keybinds.h"
+#include <scene.h>
+#include <iostream>
 
 struct PlayerTrail {
   Vector2 pos;
@@ -10,6 +12,9 @@ struct PlayerTrail {
 
 PlayerTrail trail[120] = {0};
 
+bool movedThisFrame = false;
+bool attackedThisFrame = false;
+
 Player::Player(raylib::Vector2 startPos) : Entity(startPos) {
   gridPosition = startPos;
   position = GridManager::GridPositionToWorld(gridPosition);
@@ -18,6 +23,10 @@ Player::Player(raylib::Vector2 startPos) : Entity(startPos) {
 Player::~Player(void) {}
 
 void Player::Update() {
+  movedThisFrame = false;
+  attackedThisFrame = false;
+
+
   // Lerp Entity Position to Grid Position
   position = Vector2Lerp(position, GridManager::GridPositionToWorld(gridPosition), lerpSpeed);
   currentMoveCooldown -= GetFrameTime();
@@ -28,13 +37,9 @@ void Player::Update() {
   if (IsKeyDown(MOVE_UP))    TryMove(Vector2(0, -1));
   if (IsKeyDown(MOVE_DOWN))  TryMove(Vector2(0, 1));
 
-  if (!Vector2Equals(gridPosition, gridPositionLastFrame))  {
-    if (GridManager::IsValidGridPosition(GridManager::GridPositionToWorld(gridPosition))) {
-      currentMoveCooldown = moveCooldown;
-    }
-    else{
-      gridPosition = gridPositionLastFrame;
-    }
+  if (movedThisFrame || attackedThisFrame) 
+  {
+    currentMoveCooldown = moveCooldown;
   }
 
   for (int i = 119; i > 0; i--) {
@@ -62,7 +67,25 @@ void Player::Draw() {
 }
 
 void Player::TryMove(Vector2 dir) {
-  if (currentMoveCooldown < 0) {
-    gridPosition = Vector2Add(gridPosition, dir);
+  if (currentMoveCooldown > 0) return;
+  if (attackedThisFrame) return;
+
+  Vector2 hypotheticalWorldPos = GridManager::GridPositionToWorld(Vector2Add(gridPosition, dir));
+
+  if (!GridManager::IsValidGridPosition(hypotheticalWorldPos)) return;
+
+  movedThisFrame = true;
+
+  bool enemyCollide = CheckCollisionCircleRec(hypotheticalWorldPos, CELL_SIZE / 2.0f, playScene->enemy.GetBBoxWorld());
+  
+  if (enemyCollide && playScene->enemy.isInGrid){
+    // Successful Attack
+    attackedThisFrame = true;
+    
+    std::cout << "Enemy Attacked";
+
+    return;
   }
+
+  gridPosition = Vector2Add(gridPosition, dir);
 }

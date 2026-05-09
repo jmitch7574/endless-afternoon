@@ -2,12 +2,17 @@
 #include <cmath>
 #include <raylib-cpp.hpp>
 #include "grid_manager.h"
+#include "custom_draws.h"
+
+PlayMode* playScene;
 
 PlayMode::PlayMode()
     : player(Vector2{10, 10}), enemy(Vector2{1085, 415}),
       minuteHand(Vector2{960, 540}, -90.0f, 440.0f, 8.0f, WHITE),
-      hourHand(Vector2{960, 540}, 0.0f, 280.0f, 12.0f, WHITE) {}
-PlayMode::~PlayMode(void) {}
+      hourHand(Vector2{960, 540}, 0.0f, 280.0f, 12.0f, WHITE) {
+        playScene = this;
+      }
+PlayMode::~PlayMode(void) {playScene = nullptr;}
 
 void PlayMode::Update() {
   player.Update();

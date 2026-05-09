@@ -39,9 +39,10 @@ public:
   void Update() override;
   void Draw() override;
 
-private:
   Player player;
   Enemy enemy;
   ClockHand minuteHand;
   ClockHand hourHand;
 };
+
+extern PlayMode* playScene;

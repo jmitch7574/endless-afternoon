@@ -1,4 +1,5 @@
 #include "entity.h"
+#include "grid_manager.h"
 
 Enemy::Enemy(raylib::Vector2 startPos)
     : Entity(startPos), normalAttacksRemaining(normalAttacksPerCycle) {
@@ -12,7 +13,9 @@ Enemy::Enemy(raylib::Vector2 startPos)
 Enemy::~Enemy(void) {}
 
 void Enemy::Update() {}
-void Enemy::Draw() { DrawCircleLinesV(position, 48.0f, ORANGE); }
+void Enemy::Draw() { 
+  DrawCircleLinesV(position, CELL_SIZE * 1.5, ORANGE);
+}
 
 void Enemy::PerformNextAttack() {
   if (normalAttacksRemaining > 0) {
@@ -34,3 +37,8 @@ void Enemy::NormalAttack() {}
 void Enemy::SpecialAttackOne() {}
 
 void Enemy::SpecialAttackTwo() {}
+
+Rectangle Enemy::GetBBoxWorld()
+{
+  return Rectangle(position.x - CELL_SIZE * 1.5, position.y - CELL_SIZE * 1.5, CELL_SIZE * 3, CELL_SIZE * 3);
+}
