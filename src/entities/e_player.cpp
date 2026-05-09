@@ -28,8 +28,14 @@ void Player::Update() {
   if (IsKeyDown(MOVE_UP))    TryMove(Vector2(0, -1));
   if (IsKeyDown(MOVE_DOWN))  TryMove(Vector2(0, 1));
 
-  if (!Vector2Equals(gridPosition, gridPositionLastFrame)) 
-    currentMoveCooldown = moveCooldown;
+  if (!Vector2Equals(gridPosition, gridPositionLastFrame))  {
+    if (GridManager::IsValidGridPosition(GridManager::GridPositionToWorld(gridPosition))) {
+      currentMoveCooldown = moveCooldown;
+    }
+    else{
+      gridPosition = gridPositionLastFrame;
+    }
+  }
 
   for (int i = 119; i > 0; i--) {
     trail[i] = trail[i - 1];

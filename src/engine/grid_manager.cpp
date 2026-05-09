@@ -2,17 +2,6 @@
 #include "raylib-cpp.hpp"
 #include "renderer.h"
 
-#define RADIUS 500
-#define APOTHEM (RADIUS * 0.92388f)
-#define HALF_FLAT (RADIUS * 0.38268f)
-
-#define CENTER_POINT Vector2(RENDER_TEXTURE_WIDTH / 2, RENDER_TEXTURE_HEIGHT / 2)
-
-#define BB_LEFT   CENTER_POINT.x - APOTHEM
-#define BB_RIGHT  CENTER_POINT.x + APOTHEM
-#define BB_TOP    CENTER_POINT.y - APOTHEM
-#define BB_BOTTOM CENTER_POINT.y + APOTHEM
-
 void GridManager::DrawLevelGrid() {
   
   const float endX = START_X + TOTAL_SIZE;
@@ -42,7 +31,7 @@ bool GridManager::IsValidGridPosition(Vector2 worldPosition) {
     return false;
 
   // 2. cut off corners (this replaces the triangles)
-  if (dx + dy > APOTHEM + HALF_FLAT)
+  if (dx + dy + 20.0f > APOTHEM + HALF_FLAT)
     return false;
 
   return true;
