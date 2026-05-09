@@ -60,6 +60,8 @@ class Player : public Entity
 	Vector2 lastDashTapDirection = Vector2{0.0f, 0.0f};
 	int dashRange = 3;
 
+  bool isPunchFlipped;
+
 	PlayerTrail trail[120] = {0};
 	PlayerTrail punchTrail[40] = {0};
 
