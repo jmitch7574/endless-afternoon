@@ -161,7 +161,7 @@ void MainMenu::Draw()
 	DrawOctagonClockPlate();
 	DrawSelectionHand(selectedOption == MenuOption::Play);
 
-	DrawCenteredText("Siesta Disasta", 150.0f, TITLE_SIZE, WHITE);
+	DrawCenteredText("Countdown", 150.0f, TITLE_SIZE, WHITE);
 	DrawCenteredText("Free Yourself from the Hands of Time", 260.0f, 34, Fade(WHITE, 0.8f));
 
 	const Vector2 mousePosition = GetRenderMousePosition();

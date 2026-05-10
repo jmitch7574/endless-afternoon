@@ -36,7 +36,7 @@ void UpdateDrawFrame()
 // Main enrty to game starts here.
 int main()
 {
-	raylib::Window window(RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, "Siesta Disasta");
+	raylib::Window window(RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, "Countdown");
 
 	Renderer::InitRenderTexture();
 	Utils::SeedRandom();
