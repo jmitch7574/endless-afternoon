@@ -20,6 +20,24 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "Build Showcase",
+            "type": "shell",
+            "command": "cmake -S . -B build && cmake --build build --config Showcase && .\\build\\Showcase\\endless_afternoon.exe",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
+            "group": {
+                "kind": "build",
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "Build Release",
             "type": "shell",
             "command": "cmake -S . -B build && cmake --build build --config Release && .\\build\\Release\\endless_afternoon.exe",

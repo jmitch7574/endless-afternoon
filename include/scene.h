@@ -95,6 +95,7 @@ class PlayMode : public Scene
 		Vector2 direction;
 		bool visible;
 		bool hasHit;
+		bool isHeal;
 	};
 
 	void BeginVictory();

@@ -46,6 +46,7 @@ constexpr Color CLOCK_ORANGE = Color{196, 116, 36, 255};
 bool IsSameGridCell(Vector2 a, Vector2 b) { return (int)a.x == (int)b.x && (int)a.y == (int)b.y; }
 
 bool hasFiredRomanNumerals = false;
+bool hitByRomanNumerals = false;
 
 Color LerpColor(Color from, Color to, float amount)
 {
@@ -227,6 +228,7 @@ void PlayMode::StartRedLightGreenLight()
 void PlayMode::StartRomanNumeralAttack()
 {
 	hasFiredRomanNumerals = false;
+	hitByRomanNumerals = false;
 	romanNumeralAttackState = RomanNumeralAttackState::Flash;
 	romanNumeralAttackTimer = 0.0f;
 	romanNumeralMarkers.clear();
@@ -239,6 +241,8 @@ void PlayMode::StartRomanNumeralAttack()
 		romanNumeralMarkers.push_back(
 			RomanNumeralMarker{hour, startPosition, startPosition, startPosition, inwardDirection, true, false});
 	}
+
+	romanNumeralMarkers[GetRandomValue(0, 11)].isHeal = true;
 }
 
 void PlayMode::BeginVictory()
@@ -659,10 +663,14 @@ void PlayMode::UpdateRomanNumeralAttack(float deltaTime)
 
 			if (!marker.hasHit &&
 				Utils::LineIntersectsCircle(marker.previousPosition, marker.position, player.GetPosition(),
-											CELL_SIZE * 0.45f + ROMAN_NUMERAL_ATTACK_COLLISION_RADIUS))
+											CELL_SIZE * 0.45f + ROMAN_NUMERAL_ATTACK_COLLISION_RADIUS)
+										&& !hitByRomanNumerals)
 			{
-				player.Hurt(ROMAN_NUMERAL_ATTACK_DAMAGE, D_Enemy);
+				if (marker.isHeal) player.FullHeal();
+				else player.Hurt(ROMAN_NUMERAL_ATTACK_DAMAGE, D_Enemy);
+
 				marker.hasHit = true;
+				hitByRomanNumerals = true;
 			}
 		}
 
@@ -718,23 +726,22 @@ void PlayMode::DrawRomanNumeralAttack()
 {
 	Color markerColor = WHITE;
 
-	if (romanNumeralAttackState == RomanNumeralAttackState::Flash)
-	{
-		const float pulse = 0.5f + 0.5f * sinf((float)GetTime() * 18.0f);
-		markerColor = LerpColor(WHITE, CLOCK_ORANGE, pulse);
-	}
-	else if (romanNumeralAttackState == RomanNumeralAttackState::Fire)
-	{
-		markerColor = CLOCK_ORANGE;
-	}
-	else if (romanNumeralAttackState == RomanNumeralAttackState::FadeIn)
-	{
-		const float fade = std::clamp(romanNumeralAttackTimer / ROMAN_NUMERAL_ATTACK_FADE_DURATION, 0.0f, 1.0f);
-		markerColor = Color{255, 255, 255, (unsigned char)(255.0f * fade)};
-	}
-
 	for (const RomanNumeralMarker &marker : romanNumeralMarkers)
 	{
+		if (romanNumeralAttackState == RomanNumeralAttackState::Flash)
+		{
+			const float pulse = 0.5f + 0.5f * sinf((float)GetTime() * 18.0f);
+			markerColor = LerpColor(WHITE, marker.isHeal ? GREEN : ORANGE, pulse);
+		}
+		else if (romanNumeralAttackState == RomanNumeralAttackState::Fire)
+		{
+			markerColor = marker.isHeal ? GREEN : ORANGE;
+		}
+		else if (romanNumeralAttackState == RomanNumeralAttackState::FadeIn)
+		{
+			const float fade = std::clamp(romanNumeralAttackTimer / ROMAN_NUMERAL_ATTACK_FADE_DURATION, 0.0f, 1.0f);
+			markerColor = Color{255, 255, 255, (unsigned char)(255.0f * fade)};
+		}
 		if (marker.visible)
 		{
 			ArenaManager::DrawClockMarker(marker.hour, marker.position, markerColor);

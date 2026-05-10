@@ -24,6 +24,7 @@ class Player : public Entity
 	float GetMaxHealth() const;
 	float GetStamina() const;
 	float GetMaxStamina() const;
+	void FullHeal();
 
 	void Hurt(float amount, DamageType damageType);
 	void Knockback(Vector2 Knockback);

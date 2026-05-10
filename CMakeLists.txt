@@ -9,6 +9,7 @@ if(CMAKE_CONFIGURATION_TYPES)
         RelWithDebInfo
         MinSizeRel
         Arcademia
+        Showcase
         CACHE STRING "" FORCE
     )
 endif()
@@ -66,7 +67,13 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     $<$<CONFIG:Arcademia>:ARCADEMIA>
 )
 
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    $<$<CONFIG:Showcase>:SHOWCASE>
+)
+
 set(CMAKE_CXX_FLAGS_ARCADEMIA "${CMAKE_CXX_FLAGS_RELEASE}")
+set(CMAKE_CXX_FLAGS_SHOWCASE "${CMAKE_CXX_FLAGS_RELEASE}")
 
 # Copy Resources
 

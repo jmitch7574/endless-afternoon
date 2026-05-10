@@ -527,6 +527,25 @@ void Enemy::Update()
 		break;
 	}
 
+	
+#if !defined(NDEBUG) || defined(SHOWCASE)
+	if (IsKeyPressed(KEY_KP_1) || IsKeyPressed(KEY_ONE))
+	{
+		nextSpecialAttack = 2;
+		EnterState(EnemyState::SpecialWindUp);
+	}
+	if (IsKeyPressed(KEY_KP_2) || IsKeyPressed(KEY_TWO))
+	{
+		nextSpecialAttack = 3;
+		EnterState(EnemyState::SpecialWindUp);
+	}
+	if (IsKeyPressed(KEY_KP_3) || IsKeyPressed(KEY_THREE))
+	{
+		nextSpecialAttack = 4;
+		EnterState(EnemyState::SpecialWindUp);
+	}
+#endif
+
 }
 
 void Enemy::UpdateEnemyFace() 

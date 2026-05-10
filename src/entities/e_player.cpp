@@ -11,6 +11,8 @@
 #include "scene_manager.h"
 #include "resource_loader.h"
 
+bool GodMode = false;
+
 namespace
 {
 constexpr int ARENA_CENTER_GRID = CELL_COUNT / 2;
@@ -158,6 +160,9 @@ float Player::GetStamina() const { return stamina; }
 
 float Player::GetMaxStamina() const { return maxStamina; }
 
+void Player::FullHeal() { health = 100; stamina = 100;}
+	
+
 void Player::Update()
 {
 
@@ -273,6 +278,13 @@ void Player::Update()
 		health += healRate * GetFrameTime();
 		health = fminf(health, 100);
 	}
+
+#if !defined(NDEBUG) || defined(SHOWCASE)
+	if (IsKeyPressed(KEY_RIGHT_CONTROL))
+	{
+		GodMode = !GodMode;
+	}
+#endif
 }
 
 void Player::Draw()
@@ -468,6 +480,8 @@ void Player::TryDash(Vector2 dir)
 
 void Player::Hurt(float amount, DamageType damageType)
 {
+	if (GodMode) return;
+
 	if (IsInvulnerable() && damageType != D_EvilZone)
 	{
 		return;
