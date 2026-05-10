@@ -15,6 +15,7 @@ constexpr float HANDSTACHE_CENTER_DOT_RADIUS = 5.5f;
 constexpr float DETACHED_HAND_RADIUS = CELL_SIZE * 0.24f;
 constexpr float HANDSTACHE_GRAB_PROGRESS = 0.48f;
 constexpr float HELD_HAND_RADIUS_FROM_BODY = CELL_SIZE * 1.88f;
+constexpr float PULLBACK_HOLD_PROGRESS = 0.25f;
 
 float Clamp01(float value)
 {
@@ -289,6 +290,7 @@ void Enemy::DrawBasicAttackTelegraph()
 	const float windUpProgress = Clamp01(1.0f - (stateTimer / baseAttackWindUpDuration));
 	const float reachProgress = Clamp01(windUpProgress / HANDSTACHE_GRAB_PROGRESS);
 	const float grabProgress = Clamp01((windUpProgress - HANDSTACHE_GRAB_PROGRESS) / (1.0f - HANDSTACHE_GRAB_PROGRESS));
+	const float pullbackProgress = SmoothStep((grabProgress - PULLBACK_HOLD_PROGRESS) / (1.0f - PULLBACK_HOLD_PROGRESS));
 	const Vector2 grabPoint = GetHandstacheTip(handstacheIsRight);
 	const float grabAngle = GetHandstacheAngle(handstacheIsRight);
 	const float handstacheLength = GetHandstacheLength(handstacheIsRight);
@@ -299,11 +301,10 @@ void Enemy::DrawBasicAttackTelegraph()
 
 	if (windUpProgress >= HANDSTACHE_GRAB_PROGRESS)
 	{
-		const float easedGrabProgress = SmoothStep(grabProgress);
 		handPosition = LerpAroundBody(position, grabAngle, sweepStart, grabRadius, HELD_HAND_RADIUS_FROM_BODY,
-									  easedGrabProgress);
+									  pullbackProgress);
 		holdingHandstache = true;
-		heldAngle = LerpAngleShortestPath(grabAngle, sweepStart, easedGrabProgress);
+		heldAngle = LerpAngleShortestPath(grabAngle, sweepStart, pullbackProgress);
 	}
 
 	for (int i = 4; i > 0; i--)
@@ -318,10 +319,12 @@ void Enemy::DrawBasicAttackTelegraph()
 		if (trailIsHolding)
 		{
 			const float trailGrabProgress =
-				SmoothStep((trailProgress - HANDSTACHE_GRAB_PROGRESS) / (1.0f - HANDSTACHE_GRAB_PROGRESS));
+				Clamp01((trailProgress - HANDSTACHE_GRAB_PROGRESS) / (1.0f - HANDSTACHE_GRAB_PROGRESS));
+			const float trailPullbackProgress =
+				SmoothStep((trailGrabProgress - PULLBACK_HOLD_PROGRESS) / (1.0f - PULLBACK_HOLD_PROGRESS));
 			trailPosition =
-				LerpAroundBody(position, grabAngle, sweepStart, grabRadius, HELD_HAND_RADIUS_FROM_BODY, trailGrabProgress);
-			trailHeldAngle = LerpAngleShortestPath(grabAngle, sweepStart, trailGrabProgress);
+				LerpAroundBody(position, grabAngle, sweepStart, grabRadius, HELD_HAND_RADIUS_FROM_BODY, trailPullbackProgress);
+			trailHeldAngle = LerpAngleShortestPath(grabAngle, sweepStart, trailPullbackProgress);
 		}
 
 		DrawDetachedHand(trailPosition, trailAlpha, 0.92f, trailIsHolding, trailHeldAngle, handstacheLength);

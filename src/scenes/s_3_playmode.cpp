@@ -327,9 +327,9 @@ void PlayMode::UpdateMovingClockHandImpact()
 
 	if (hourHand.IsMoving())
 	{
-		touchingMovingHand = touchingMovingHand ||
-							 Utils::LineIntersectsCircle(hourHand.GetPosition(), hourHand.GetLargeExtendedPoint(),
-														 player.GetPosition(), playerRadius);
+		touchingMovingHand =
+			touchingMovingHand || Utils::LineIntersectsCircle(hourHand.GetPosition(), hourHand.GetLargeExtendedPoint(),
+															  player.GetPosition(), playerRadius);
 	}
 
 	if (touchingMovingHand && !playerTouchingMovingClockHand)
@@ -453,13 +453,10 @@ void PlayMode::UpdateRedLightGreenLight(float deltaTime)
 		}
 	}
 
-	redLightCells.erase(std::remove_if(redLightCells.begin(), redLightCells.end(),
-									   [](const RedLightCell &cell)
-									   {
-										   return cell.telegraphTimer <= 0.0f && cell.activeTimer <= 0.0f &&
-												  cell.fadeTimer <= 0.0f;
-									   }),
-						redLightCells.end());
+	redLightCells.erase(
+		std::remove_if(redLightCells.begin(), redLightCells.end(), [](const RedLightCell &cell)
+					   { return cell.telegraphTimer <= 0.0f && cell.activeTimer <= 0.0f && cell.fadeTimer <= 0.0f; }),
+		redLightCells.end());
 
 	if (redLightDamageCooldown <= 0.0f && IsPlayerOnActiveRedLightCell())
 	{
@@ -536,8 +533,9 @@ void PlayMode::QueueRedLightCells()
 		const bool horizontal = GetRandomValue(0, 1) == 0;
 		for (int offset = -3; offset <= 3; offset++)
 		{
-			const Vector2 candidate = horizontal ? Vector2{player.gridPosition.x + (float)offset, player.gridPosition.y}
-												: Vector2{player.gridPosition.x, player.gridPosition.y + (float)offset};
+			const Vector2 candidate = horizontal
+										  ? Vector2{player.gridPosition.x + (float)offset, player.gridPosition.y}
+										  : Vector2{player.gridPosition.x, player.gridPosition.y + (float)offset};
 			const int beforeCount = (int)redLightCells.size();
 			QueueRedLightCell(candidate);
 			if ((int)redLightCells.size() > beforeCount)
@@ -548,10 +546,10 @@ void PlayMode::QueueRedLightCells()
 	}
 	else if (pattern == 1)
 	{
-		const Vector2 center =
-			Vector2{player.gridPosition.x + (float)GetRandomValue(-3, 3), player.gridPosition.y + (float)GetRandomValue(-3, 3)};
-		const Vector2 offsets[] = {Vector2{0, 0}, Vector2{1, 0}, Vector2{-1, 0}, Vector2{0, 1}, Vector2{0, -1},
-								   Vector2{1, 1}, Vector2{-1, -1}};
+		const Vector2 center = Vector2{player.gridPosition.x + (float)GetRandomValue(-3, 3),
+									   player.gridPosition.y + (float)GetRandomValue(-3, 3)};
+		const Vector2 offsets[] = {Vector2{0, 0},  Vector2{1, 0}, Vector2{-1, 0}, Vector2{0, 1},
+								   Vector2{0, -1}, Vector2{1, 1}, Vector2{-1, -1}};
 
 		for (const Vector2 &offset : offsets)
 		{

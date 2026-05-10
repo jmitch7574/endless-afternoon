@@ -158,8 +158,8 @@ void Enemy::SpinningTopSecondaryAttack(float deltaTime)
 {
 	stateTimer -= deltaTime;
 	const float previousSpinAngle = spinningSecondarySpinAngle;
-	spinningSecondarySpinAngle =
-		NormalizeAngle(spinningSecondarySpinAngle + spinningSecondarySpinDirection * spinningSecondarySpinSpeed * deltaTime);
+	spinningSecondarySpinAngle = NormalizeAngle(
+		spinningSecondarySpinAngle + spinningSecondarySpinDirection * spinningSecondarySpinSpeed * deltaTime);
 	spinningSecondaryDamageCooldown -= deltaTime;
 
 	if (currentMoveCooldown <= 0.0f)
@@ -176,13 +176,13 @@ void Enemy::SpinningTopSecondaryAttack(float deltaTime)
 		for (int i = 0; i <= sampleCount; i++)
 		{
 			const float t = (float)i / (float)sampleCount;
-			const float sampleAngle = previousSpinAngle + spinningSecondarySpinDirection * spinningSecondarySpinSpeed * deltaTime * t;
-			const bool hitByLeftHand =
-				Utils::LineIntersectsCircle(GetHeldHandBase(sampleAngle), GetHeldHandTip(sampleAngle, false),
-											playerPosition, playerRadius);
+			const float sampleAngle =
+				previousSpinAngle + spinningSecondarySpinDirection * spinningSecondarySpinSpeed * deltaTime * t;
+			const bool hitByLeftHand = Utils::LineIntersectsCircle(
+				GetHeldHandBase(sampleAngle), GetHeldHandTip(sampleAngle, false), playerPosition, playerRadius);
 			const bool hitByRightHand =
-				Utils::LineIntersectsCircle(GetHeldHandBase(sampleAngle + 180.0f), GetHeldHandTip(sampleAngle + 180.0f, true),
-											playerPosition, playerRadius);
+				Utils::LineIntersectsCircle(GetHeldHandBase(sampleAngle + 180.0f),
+											GetHeldHandTip(sampleAngle + 180.0f, true), playerPosition, playerRadius);
 
 			if (hitByLeftHand || hitByRightHand)
 			{
@@ -190,7 +190,7 @@ void Enemy::SpinningTopSecondaryAttack(float deltaTime)
 				spinningSecondaryDamageCooldown = spinningSecondaryDamageInterval;
 				break;
 			}
-		}	
+		}
 	}
 
 	if (stateTimer <= 0)
@@ -207,30 +207,54 @@ void Enemy::FinishSecondaryAttack()
 
 void Enemy::RunSelectedSpecialAttack()
 {
-	switch (currentSpecialAttack)
+	RunSpecialAttackEffect(currentSpecialAttack);
+	nextSpecialAttack = GetRandomSpecialAttack(currentSpecialAttack);
+}
+
+int Enemy::GetRandomSpecialAttack(int excludedSpecialAttack) const
+{
+	const int specialAttacks[] = {1, 2, 3, 4};
+	int candidates[4] = {};
+	int candidateCount = 0;
+
+	for (const int specialAttack : specialAttacks)
 	{
+		if (specialAttack != excludedSpecialAttack)
+		{
+			candidates[candidateCount] = specialAttack;
+			candidateCount++;
+		}
+	}
+
+	return candidates[GetRandomValue(0, candidateCount - 1)];
+}
+
+void Enemy::RunSpecialAttackEffect(int specialAttack)
+{
+	switch (specialAttack)
+	{
+	case 1:
+		SpecialAttack1();
+		break;
 	case 2:
 		SpecialAttack2();
-		nextSpecialAttack = 3;
 		break;
 	case 3:
 		SpecialAttack3();
-		nextSpecialAttack = 4;
 		break;
 	case 4:
 		SpecialAttack4();
-		nextSpecialAttack = 2;
 		break;
 	default:
 		SpecialAttack1();
-		nextSpecialAttack = 2;
 		break;
 	}
 }
 
-void Enemy::SpecialAttack1() 
+void Enemy::SpecialAttack1()
 {
-	
+	StartFloatyPhase(9.0f);
+	RunSpecialAttackEffect(GetRandomSpecialAttack(1));
 }
 
 void Enemy::SpecialAttack2()
@@ -254,9 +278,6 @@ void Enemy::SpecialAttack2()
 	const float spinDegrees = 360.0f + 90.0f * (float)GetRandomValue(0, 3);
 	playScene->minuteHand.BeginBigDeadlySpin(spinDirection, spinDegrees);
 	playScene->hourHand.BeginBigDeadlySpin(spinDirection, spinDegrees);
-	
-	specialStateTimeLeft = 9;
-	specialStateTimeIn = 0;
 }
 
 void Enemy::SpecialAttack3()
@@ -267,8 +288,6 @@ void Enemy::SpecialAttack3()
 	}
 
 	playScene->StartRedLightGreenLight();
-	specialStateTimeLeft = 12;
-	specialStateTimeIn = 0;
 }
 
 void Enemy::SpecialAttack4()
