@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <raylib-cpp.hpp>
+#include "resource_loader.h"
 
 namespace
 {
@@ -43,6 +44,8 @@ constexpr Color CLOCK_HAND_HUB_ORANGE = Color{196, 116, 36, 255};
 constexpr Color CLOCK_ORANGE = Color{196, 116, 36, 255};
 
 bool IsSameGridCell(Vector2 a, Vector2 b) { return (int)a.x == (int)b.x && (int)a.y == (int)b.y; }
+
+bool hasFiredRomanNumerals = false;
 
 Color LerpColor(Color from, Color to, float amount)
 {
@@ -97,8 +100,8 @@ void DrawResourceBar(Rectangle bounds, float displayedValue, float actualValue, 
 PlayMode *playScene;
 
 PlayMode::PlayMode()
-	: player(Vector2{10, 10}), enemy(Vector2{5, 5}), minuteHand(Vector2{960, 540}, -90.0f, 440.0f, 8.0f, WHITE),
-	  hourHand(Vector2{960, 540}, -90.0f, 280.0f, 12.0f, WHITE), dangerEffects()
+	: player(Vector2{10, 10}), enemy(Vector2{5, 5}), minuteHand(Vector2{960, 540}, -90.0f, 440.0f, 8.0f, WHITE, true),
+	  hourHand(Vector2{960, 540}, -90.0f, 280.0f, 12.0f, WHITE, false), dangerEffects()
 {
 	playScene = this;
 	displayedEnemyHealth = enemy.GetHealth();
@@ -223,6 +226,7 @@ void PlayMode::StartRedLightGreenLight()
 
 void PlayMode::StartRomanNumeralAttack()
 {
+	hasFiredRomanNumerals = false;
 	romanNumeralAttackState = RomanNumeralAttackState::Flash;
 	romanNumeralAttackTimer = 0.0f;
 	romanNumeralMarkers.clear();
@@ -430,6 +434,7 @@ void PlayMode::UpdateRedLightGreenLight(float deltaTime)
 	{
 		QueueRedLightCell(player.gridPosition);
 		redLightPlayerTargetTimer = RED_LIGHT_PLAYER_TARGET_INTERVAL;
+		PlaySound(Resources::GetGreenLightUp());
 	}
 
 	for (RedLightCell &cell : redLightCells)
@@ -639,6 +644,11 @@ void PlayMode::UpdateRomanNumeralAttack(float deltaTime)
 		break;
 	case RomanNumeralAttackState::Fire:
 	{
+		if(!hasFiredRomanNumerals)
+		{
+			hasFiredRomanNumerals = true;
+			PlaySound(Resources::GetNumeralsLaunch());
+		}
 		const float progress = std::clamp(romanNumeralAttackTimer / ROMAN_NUMERAL_ATTACK_FIRE_DURATION, 0.0f, 1.0f);
 		const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
 

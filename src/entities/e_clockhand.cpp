@@ -3,14 +3,17 @@
 #include "entities/clockhand.h"
 #include "utils.h"
 #include <cmath>
+#include "resource_loader.h"
 
 namespace
 {
 constexpr float BIG_DEADLY_SPIN_SPEED_DEGREES_PER_SECOND = 40.0f;
 }
 
-ClockHand::ClockHand(raylib::Vector2 pivot, float angleDeg, float length, float thickness, Color color)
-	: Entity(pivot), angleDeg(angleDeg), length(length), thickness(thickness), color(color)
+float nextTickTime;
+
+ClockHand::ClockHand(raylib::Vector2 pivot, float angleDeg, float length, float thickness, Color color, bool isAudible)
+	: Entity(pivot), angleDeg(angleDeg), length(length), thickness(thickness), color(color), isAudible(isAudible)
 {
 	targetAngleDeg = angleDeg;
 	advanceStartAngleDeg = angleDeg;
@@ -28,6 +31,8 @@ void ClockHand::Update()
 		angleDeg = Utils::NormalizeAngle(angleDeg + rotationThisFrame * (float)bigDeadlySpinDirection);
 		bigDeadlySpinDegreesRemaining -= rotationThisFrame;
 
+		if ((int)bigDeadlySpinDegreesRemaining % 10 == 0 && isAudible) PlaySound(Resources::GetClockSpinTock());
+
 		if (bigDeadlySpinDegreesRemaining <= 0.0f)
 		{
 			targetAngleDeg = angleDeg;
@@ -43,6 +48,8 @@ void ClockHand::Update()
 		const float progress = fminf(advanceTime / advanceDuration, 1.0f);
 		const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
 		angleDeg = advanceStartAngleDeg + (advanceTargetAngleDeg - advanceStartAngleDeg) * easedProgress;
+		
+		CheckTickNoise(advanceTime);
 
 		if (progress >= 1.0f)
 		{
@@ -74,6 +81,7 @@ void ClockHand::Advance()
 
 void ClockHand::StartAdvance()
 {
+	nextTickTime = 0.2f;
 	targetAngleDeg = angleDeg + 90.0f;
 	advanceStartAngleDeg = angleDeg;
 	advanceTargetAngleDeg = targetAngleDeg;
@@ -107,6 +115,7 @@ void ClockHand::CompleteAdvanceInstantly()
 
 void ClockHand::BeginBigDeadlySpin(int spinDirection, float spinDegrees)
 {
+	nextTickTime = 0.2f;
 	const int direction = spinDirection == 0 ? (GetRandomValue(0, 99) < 50 ? 1 : -1) : (spinDirection < 0 ? -1 : 1);
 	const float totalSpinDegrees = fmaxf(fabsf(spinDegrees), 1.0f);
 
@@ -123,6 +132,18 @@ void ClockHand::BeginBigDeadlySpin(int spinDirection, float spinDegrees)
 	inBigDeadlySpin = true;
 }
 
+void ClockHand::CheckTickNoise(float t) 
+{
+	const float tickInterval = 0.2f;
+
+	while (t >= nextTickTime)
+	{
+		nextTickTime += tickInterval;
+
+		if (isAudible)
+			PlaySound(Resources::GetClockSpinTock());
+	}
+}
 Vector2 ClockHand::GetLargeExtendedPoint()
 {
 	return Vector2Add(position, Vector2Scale(Utils::AngleToVector2(GetAngle()), 10000));

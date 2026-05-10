@@ -6,17 +6,19 @@ class ClockHand : public Entity
 {
   public:
 	float GetAngle();
-	ClockHand(raylib::Vector2 pivot, float angleDeg, float length, float thickness, Color color);
+	ClockHand(raylib::Vector2 pivot, float angleDeg, float length, float thickness, Color color, bool isAudible);
 	~ClockHand(void);
 
 	void Update() override;
 	void Draw() override;
 	void Advance();
 	void BeginBigDeadlySpin(int spinDirection = 0, float spinDegrees = 360.0f);
+	void CheckTickNoise(float t);
 	Vector2 GetLargeExtendedPoint();
 	bool IsMoving() const;
 
 	bool activated = false;
+	bool isAudible = false;
 
   protected:
 	void StartAdvance();

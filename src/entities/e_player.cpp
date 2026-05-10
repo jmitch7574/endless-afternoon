@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include "scene_manager.h"
+#include "resource_loader.h"
 
 namespace
 {
@@ -480,6 +481,7 @@ void Player::Hurt(float amount, DamageType damageType)
 
 	//if (damageType == D_Enemy) g_SceneManager.hitstunFrames = amount / 1.5f;
 	DangerEffects::singleton->DisplayHurt();
+	PlaySound(Resources::GetPlayerHurt());
 }
 
 void Player::Knockback(Vector2 Knockback) {}

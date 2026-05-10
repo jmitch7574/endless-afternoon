@@ -121,6 +121,7 @@ void Enemy::Hurt(float amount)
 	health = std::max(0.0f, health - amount);
 	timeSinceLastHit = 0;
 	ScreenShake::Shake(ENEMY_HIT_SHAKE_STRENGTH, ENEMY_HIT_SHAKE_DURATION);
+	PlaySound(Resources::GetEnemyHurt());
 }
 
 void Enemy::SetTargetGridPosition(Vector2 target) { targetGridPosition = target; }
