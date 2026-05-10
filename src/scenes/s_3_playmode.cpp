@@ -22,6 +22,13 @@ constexpr float RED_LIGHT_DAMAGE = 5.0f;
 constexpr float EVIL_ZONE_DAMAGE_INTERVAL = 1.0f;
 constexpr float EVIL_ZONE_DAMAGE = 5.0f;
 constexpr float MOVING_CLOCK_HAND_IMPACT_DAMAGE = 20.0f;
+constexpr float ROMAN_NUMERAL_ATTACK_FLASH_DURATION = 1.2f;
+constexpr float ROMAN_NUMERAL_ATTACK_FIRE_DURATION = 2.2f;
+constexpr float ROMAN_NUMERAL_ATTACK_HIDDEN_DURATION = 0.25f;
+constexpr float ROMAN_NUMERAL_ATTACK_FADE_DURATION = 0.9f;
+constexpr float ROMAN_NUMERAL_ATTACK_DAMAGE = 20.0f;
+constexpr float ROMAN_NUMERAL_ATTACK_COLLISION_RADIUS = 36.0f;
+constexpr float ROMAN_NUMERAL_ATTACK_TRAVEL_DISTANCE = (float)RENDER_TEXTURE_WIDTH * 1.45f;
 constexpr float CLOCK_HAND_HUB_RADIUS = 18.0f;
 constexpr float CLOCK_HAND_HUB_INNER_RADIUS = 8.0f;
 constexpr float RESOURCE_BAR_TOTAL_WIDTH = 760.0f;
@@ -33,8 +40,18 @@ constexpr float PLAYER_RESOURCE_BAR_Y = (float)RENDER_TEXTURE_HEIGHT - 58.0f;
 constexpr float RESOURCE_BAR_LERP_SPEED = 9.0f;
 constexpr int RED_LIGHT_CELLS_PER_WAVE = 7;
 constexpr Color CLOCK_HAND_HUB_ORANGE = Color{196, 116, 36, 255};
+constexpr Color CLOCK_ORANGE = Color{196, 116, 36, 255};
 
 bool IsSameGridCell(Vector2 a, Vector2 b) { return (int)a.x == (int)b.x && (int)a.y == (int)b.y; }
+
+Color LerpColor(Color from, Color to, float amount)
+{
+	amount = std::clamp(amount, 0.0f, 1.0f);
+	return Color{(unsigned char)((float)from.r + ((float)to.r - (float)from.r) * amount),
+				 (unsigned char)((float)from.g + ((float)to.g - (float)from.g) * amount),
+				 (unsigned char)((float)from.b + ((float)to.b - (float)from.b) * amount),
+				 (unsigned char)((float)from.a + ((float)to.a - (float)from.a) * amount)};
+}
 
 Rectangle GridCellBounds(Vector2 gridPosition)
 {
@@ -133,6 +150,7 @@ void PlayMode::Update()
 	UpdateRedLightGreenLight(deltaTime);
 	UpdateEvilZone(deltaTime);
 	UpdateMovingClockHandImpact();
+	UpdateRomanNumeralAttack(deltaTime);
 	UpdateBarDisplays(deltaTime);
 
 	if (enemy.GetHealth() <= 0)
@@ -156,7 +174,7 @@ void PlayMode::Draw()
 
 	ArenaManager::MaskOutsideOctagon();
 	ArenaManager::DrawOctagonBoundary();
-	// ArenaManager::DrawClockMarkers();
+	DrawRomanNumerals();
 	hourHand.Draw();
 	minuteHand.Draw();
 	DrawClockHandHub(minuteHand.GetPosition(), minuteHand.activated || hourHand.activated);
@@ -201,6 +219,22 @@ void PlayMode::StartRedLightGreenLight()
 	redLightDamageCooldown = 0.0f;
 	redLightWaveCount = 0;
 	redLightCells.clear();
+}
+
+void PlayMode::StartRomanNumeralAttack()
+{
+	romanNumeralAttackState = RomanNumeralAttackState::Flash;
+	romanNumeralAttackTimer = 0.0f;
+	romanNumeralMarkers.clear();
+
+	for (int hour = 1; hour <= 12; hour++)
+	{
+		const Vector2 startPosition = ArenaManager::ClockMarkerPosition(hour);
+		const Vector2 inwardDirection = Vector2Scale(ArenaManager::ClockMarkerOutwardDirection(hour), -1.0f);
+
+		romanNumeralMarkers.push_back(
+			RomanNumeralMarker{hour, startPosition, startPosition, startPosition, inwardDirection, true, false});
+	}
 }
 
 void PlayMode::BeginVictory()
@@ -577,6 +611,127 @@ bool PlayMode::IsPlayerOnActiveRedLightCell() const
 	}
 
 	return false;
+}
+
+void PlayMode::UpdateRomanNumeralAttack(float deltaTime)
+{
+	if (romanNumeralAttackState == RomanNumeralAttackState::Inactive)
+	{
+		return;
+	}
+
+	romanNumeralAttackTimer += deltaTime;
+
+	switch (romanNumeralAttackState)
+	{
+	case RomanNumeralAttackState::Flash:
+		if (romanNumeralAttackTimer >= ROMAN_NUMERAL_ATTACK_FLASH_DURATION)
+		{
+			romanNumeralAttackState = RomanNumeralAttackState::Fire;
+			romanNumeralAttackTimer = 0.0f;
+			for (RomanNumeralMarker &marker : romanNumeralMarkers)
+			{
+				marker.previousPosition = marker.position;
+				marker.hasHit = false;
+				marker.visible = true;
+			}
+		}
+		break;
+	case RomanNumeralAttackState::Fire:
+	{
+		const float progress = std::clamp(romanNumeralAttackTimer / ROMAN_NUMERAL_ATTACK_FIRE_DURATION, 0.0f, 1.0f);
+		const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
+
+		for (RomanNumeralMarker &marker : romanNumeralMarkers)
+		{
+			marker.previousPosition = marker.position;
+			marker.position =
+				Vector2Add(marker.startPosition,
+						   Vector2Scale(marker.direction, ROMAN_NUMERAL_ATTACK_TRAVEL_DISTANCE * easedProgress));
+
+			if (!marker.hasHit &&
+				Utils::LineIntersectsCircle(marker.previousPosition, marker.position, player.GetPosition(),
+											CELL_SIZE * 0.45f + ROMAN_NUMERAL_ATTACK_COLLISION_RADIUS))
+			{
+				player.Hurt(ROMAN_NUMERAL_ATTACK_DAMAGE, D_Enemy);
+				marker.hasHit = true;
+			}
+		}
+
+		if (romanNumeralAttackTimer >= ROMAN_NUMERAL_ATTACK_FIRE_DURATION)
+		{
+			romanNumeralAttackState = RomanNumeralAttackState::Hidden;
+			romanNumeralAttackTimer = 0.0f;
+			for (RomanNumeralMarker &marker : romanNumeralMarkers)
+			{
+				marker.position = marker.startPosition;
+				marker.previousPosition = marker.startPosition;
+				marker.visible = false;
+			}
+		}
+		break;
+	}
+	case RomanNumeralAttackState::Hidden:
+		if (romanNumeralAttackTimer >= ROMAN_NUMERAL_ATTACK_HIDDEN_DURATION)
+		{
+			romanNumeralAttackState = RomanNumeralAttackState::FadeIn;
+			romanNumeralAttackTimer = 0.0f;
+			for (RomanNumeralMarker &marker : romanNumeralMarkers)
+			{
+				marker.visible = true;
+			}
+		}
+		break;
+	case RomanNumeralAttackState::FadeIn:
+		if (romanNumeralAttackTimer >= ROMAN_NUMERAL_ATTACK_FADE_DURATION)
+		{
+			romanNumeralAttackState = RomanNumeralAttackState::Inactive;
+			romanNumeralAttackTimer = 0.0f;
+			romanNumeralMarkers.clear();
+		}
+		break;
+	case RomanNumeralAttackState::Inactive:
+		break;
+	}
+}
+
+void PlayMode::DrawRomanNumerals()
+{
+	if (romanNumeralAttackState == RomanNumeralAttackState::Inactive)
+	{
+		ArenaManager::DrawClockMarkers();
+		return;
+	}
+
+	DrawRomanNumeralAttack();
+}
+
+void PlayMode::DrawRomanNumeralAttack()
+{
+	Color markerColor = WHITE;
+
+	if (romanNumeralAttackState == RomanNumeralAttackState::Flash)
+	{
+		const float pulse = 0.5f + 0.5f * sinf((float)GetTime() * 18.0f);
+		markerColor = LerpColor(WHITE, CLOCK_ORANGE, pulse);
+	}
+	else if (romanNumeralAttackState == RomanNumeralAttackState::Fire)
+	{
+		markerColor = CLOCK_ORANGE;
+	}
+	else if (romanNumeralAttackState == RomanNumeralAttackState::FadeIn)
+	{
+		const float fade = std::clamp(romanNumeralAttackTimer / ROMAN_NUMERAL_ATTACK_FADE_DURATION, 0.0f, 1.0f);
+		markerColor = Color{255, 255, 255, (unsigned char)(255.0f * fade)};
+	}
+
+	for (const RomanNumeralMarker &marker : romanNumeralMarkers)
+	{
+		if (marker.visible)
+		{
+			ArenaManager::DrawClockMarker(marker.hour, marker.position, markerColor);
+		}
+	}
 }
 
 void PlayMode::DrawEvilZone()

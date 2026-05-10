@@ -55,6 +55,7 @@ class PlayMode : public Scene
 
 	void EnemyHit(float damage);
 	void StartRedLightGreenLight();
+	void StartRomanNumeralAttack();
 	void DrawEvilZone();
 	void DrawEnemyHealthBar();
 
@@ -76,6 +77,26 @@ class PlayMode : public Scene
 		float fadeTimer;
 	};
 
+	enum class RomanNumeralAttackState
+	{
+		Inactive,
+		Flash,
+		Fire,
+		Hidden,
+		FadeIn
+	};
+
+	struct RomanNumeralMarker
+	{
+		int hour;
+		Vector2 startPosition;
+		Vector2 previousPosition;
+		Vector2 position;
+		Vector2 direction;
+		bool visible;
+		bool hasHit;
+	};
+
 	void BeginVictory();
 	void BeginGameOver();
 	void UpdateBarDisplays(float deltaTime);
@@ -89,6 +110,9 @@ class PlayMode : public Scene
 	void QueueRedLightCell(Vector2 gridPosition);
 	bool IsRedLightCellQueued(Vector2 gridPosition) const;
 	bool IsPlayerOnActiveRedLightCell() const;
+	void UpdateRomanNumeralAttack(float deltaTime);
+	void DrawRomanNumerals();
+	void DrawRomanNumeralAttack();
 
 	bool victoryTriggered = false;
 	bool gameOverTriggered = false;
@@ -105,6 +129,9 @@ class PlayMode : public Scene
 	float redLightDamageCooldown = 0.0f;
 	int redLightWaveCount = 0;
 	std::vector<RedLightCell> redLightCells;
+	RomanNumeralAttackState romanNumeralAttackState = RomanNumeralAttackState::Inactive;
+	float romanNumeralAttackTimer = 0.0f;
+	std::vector<RomanNumeralMarker> romanNumeralMarkers;
 };
 
 class VictoryScreen : public Scene

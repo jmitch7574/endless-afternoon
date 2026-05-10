@@ -218,6 +218,10 @@ void Enemy::RunSelectedSpecialAttack()
 		break;
 	case 3:
 		SpecialAttack3();
+		nextSpecialAttack = 4;
+		break;
+	case 4:
+		SpecialAttack4();
 		nextSpecialAttack = 2;
 		break;
 	default:
@@ -268,4 +272,14 @@ void Enemy::SpecialAttack3()
 	playScene->StartRedLightGreenLight();
 	specialStateTimeLeft = 12;
 	specialStateTimeIn = 0;
+}
+
+void Enemy::SpecialAttack4()
+{
+	if (playScene == nullptr)
+	{
+		return;
+	}
+
+	playScene->StartRomanNumeralAttack();
 }
