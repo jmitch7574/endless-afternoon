@@ -52,11 +52,11 @@ void Enemy::DrawEnemyFace()
 	
 
 	CustomDraws::DrawArrow(moustacheBase, (90 + currentMoustacheGap) + currentMoustacheOffset, 
-								75, 8, 15, 15, DARKBROWN);
+								50, 8, 15, 15, WHITE);
 								
 
 	CustomDraws::DrawArrow(moustacheBase, (90 - currentMoustacheGap) + currentMoustacheOffset, 
-								75, 8, 15, 15, DARKBROWN);						
+								50, 8, 15, 15, WHITE);						
 }
 
 
