@@ -253,7 +253,7 @@ class Enemy : public Entity
 	// Enemy Colours
 	Color ClockWhite() {
 		if (worldSpace == WorldSpace::Floaty && specialStateTimeIn >= 1 && specialStateTimeLeft >= 1)
-			return Color{255, 255, 255, (unsigned char)(Enemy::GetOpacity() * 128.0f)};
+			return Color{255, 255, 255, (unsigned char)(Enemy::GetOpacity() * 64.0f)};
 		return Color{255, 255, 255, (unsigned char)(Enemy::GetOpacity() * 255.0f)};
 	}
 	Color ClockHands() {
@@ -263,7 +263,7 @@ class Enemy : public Entity
 	Color ClockOrange() 
 	{ 
 		if (worldSpace == WorldSpace::Floaty && specialStateTimeIn >= 1 && specialStateTimeLeft >= 1)
-			return Color{255, 161, 0, (unsigned char)(Enemy::GetOpacity() * 128.0f)};
+			return Color{255, 161, 0, (unsigned char)(Enemy::GetOpacity() * 64.0f)};
 		return Color{255, 161, 0, (unsigned char)(Enemy::GetOpacity() * 255.0f)};
 	}
 	Color ClockRest() { return Fade(ClockOrange(), 0.45f); }

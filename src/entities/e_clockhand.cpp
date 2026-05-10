@@ -58,7 +58,7 @@ void ClockHand::Draw()
 {
 	const float drawLength = fmaxf(length, ArenaManager::DistanceToOctagonEdge(GetAngle()));
 	const float fletchLength = fmaxf(35.0f, thickness * 3.0f);
-	CustomDraws::DrawArrow(position, GetAngle(), drawLength, thickness, fletchLength, 35, activated ? color : Color(80, 80, 80, 255));
+	CustomDraws::DrawArrow(position, GetAngle(), drawLength, thickness, fletchLength, 35, (activated || isAdvancing || inBigDeadlySpin) ? color : Color(80, 80, 80, 255));
 }
 
 void ClockHand::Advance()
