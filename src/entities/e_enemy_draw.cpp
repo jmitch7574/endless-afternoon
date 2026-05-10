@@ -78,6 +78,19 @@ void Enemy::DrawAttackClockHand(Vector2 clockCenter, float sweepAngle, bool isRi
 
 Color Enemy::ClockHandOrange(unsigned char alpha) { return Color{196, 116, 36, alpha}; }
 
+void Enemy::DrawMovementTrail()
+{
+	for (int i = MOVE_TRAIL_SAMPLES - 1; i > 0; i--)
+	{
+		if (moveTrail[i].opacity <= 0)
+		{
+			continue;
+		}
+
+		DrawCircleV(moveTrail[i].pos, CELL_SIZE * 1.5f, Color{196, 116, 36, (unsigned char)moveTrail[i].opacity});
+	}
+}
+
 void Enemy::DrawPunchEffect()
 {
 	if (punchAnimationTime >= PUNCH_EFFECT_DURATION)
@@ -115,16 +128,12 @@ void Enemy::DrawPunchEffect()
 
 void Enemy::DrawBasicAttackTelegraph()
 {
-	const Vector2 targetWorld = ArenaManager::GridPositionToWorld(Vector2{(float)attackTargetX, (float)attackTargetY});
-	const Rectangle targetRect = {targetWorld.x - CELL_SIZE / 2.0f, targetWorld.y - CELL_SIZE / 2.0f, CELL_SIZE,
-								  CELL_SIZE};
 	const float swingSide = currentBasicAttackIsRightSwing ? 1.0f : -1.0f;
 	const float targetAngle = Utils::Vector2ToAngle(GetPunchDirectionToTarget());
 	const float sweepStart = targetAngle - swingSide * (CLOCK_HAND_SWEEP_DEGREES * 0.5f);
 	const float windUpProgress = std::max(std::min(1.0f - (stateTimer / baseAttackWindUpDuration), 1.0f), 0.0f);
 	const float lengthScale = 0.2f + 0.8f * windUpProgress;
 
-	DrawRectangleLinesEx(targetRect, 2.0f, ClockHandOrange(255));
 	DrawAttackClockHand(position, sweepStart, currentBasicAttackIsRightSwing, 255, lengthScale);
 }
 
@@ -238,6 +247,7 @@ void Enemy::Draw()
 		}
 	}
 
+	DrawMovementTrail();
 	DrawCircleV(position, radius + CELL_SIZE * 0.13f, radiusColor);
 	DrawCircleV(position, radius, bodyColor);
 	DrawEnemyFace();

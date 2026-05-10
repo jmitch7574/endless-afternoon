@@ -88,6 +88,28 @@ bool ArenaManager::IsValidGridPosition(Vector2 worldPosition)
 	return true;
 }
 
+float ArenaManager::DistanceToOctagonEdge(float angleDeg)
+{
+	const float angle = angleDeg * DEG2RAD;
+	const float x = fabsf(cosf(angle));
+	const float y = fabsf(sinf(angle));
+	const float diagonalLimit = GRID_HALF_SIZE + OCTAGON_HALF_FLAT_EDGE_PX;
+
+	float distance = diagonalLimit / (x + y);
+
+	if (x > 0.0f)
+	{
+		distance = fminf(distance, GRID_HALF_SIZE / x);
+	}
+
+	if (y > 0.0f)
+	{
+		distance = fminf(distance, GRID_HALF_SIZE / y);
+	}
+
+	return distance;
+}
+
 // Draw the level grid
 void ArenaManager::DrawLevelGrid()
 {

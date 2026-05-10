@@ -1,7 +1,13 @@
+#include "arena_manager.h"
 #include "custom_draws.h"
 #include "entities/clockhand.h"
 #include "utils.h"
 #include <cmath>
+
+namespace
+{
+constexpr float BIG_DEADLY_SPIN_SPEED_DEGREES_PER_SECOND = 40.0f;
+}
 
 ClockHand::ClockHand(raylib::Vector2 pivot, float angleDeg, float length, float thickness, Color color)
 	: Entity(pivot), angleDeg(angleDeg), length(length), thickness(thickness), color(color)
@@ -17,12 +23,16 @@ void ClockHand::Update()
 {
 	if (inBigDeadlySpin)
 	{
-		bigDeadlySpinTime += GetFrameTime();
+		const float rotationThisFrame =
+			fminf(bigDeadlySpinDegreesRemaining, BIG_DEADLY_SPIN_SPEED_DEGREES_PER_SECOND * GetFrameTime());
+		angleDeg = Utils::NormalizeAngle(angleDeg + rotationThisFrame * (float)bigDeadlySpinDirection);
+		bigDeadlySpinDegreesRemaining -= rotationThisFrame;
 
-		if (bigDeadlySpinTime >= 9)
+		if (bigDeadlySpinDegreesRemaining <= 0.0f)
 		{
+			targetAngleDeg = angleDeg;
 			inBigDeadlySpin = false;
-			bigDeadlySpinTime = 0;
+			bigDeadlySpinDegreesRemaining = 0.0f;
 		}
 	}
 
@@ -43,7 +53,9 @@ void ClockHand::Update()
 
 void ClockHand::Draw()
 {
-	CustomDraws::DrawArrow(position, GetAngle(), 450, 10, 35, 35, activated ? WHITE : Color(80, 80, 80, 255));
+	const float drawLength = fmaxf(length, ArenaManager::DistanceToOctagonEdge(GetAngle()));
+	const float fletchLength = fmaxf(35.0f, thickness * 3.0f);
+	CustomDraws::DrawArrow(position, GetAngle(), drawLength, thickness, fletchLength, 35, activated ? color : Color(80, 80, 80, 255));
 }
 
 void ClockHand::Advance()
@@ -55,12 +67,13 @@ void ClockHand::Advance()
 	advanceTime = 0;
 }
 
-void ClockHand::BeginBigDeadlySpin(int spinDirection)
+void ClockHand::BeginBigDeadlySpin(int spinDirection, float spinDegrees)
 {
 	const int direction = spinDirection == 0 ? (GetRandomValue(0, 99) < 50 ? 1 : -1) : (spinDirection < 0 ? -1 : 1);
+	const float totalSpinDegrees = fmaxf(fabsf(spinDegrees), 1.0f);
 
-	bigDeadlySpinTime = 0;
-	bigDeadlySpinCoefficient = 40.0f * (float)direction;
+	bigDeadlySpinDegreesRemaining = totalSpinDegrees;
+	bigDeadlySpinDirection = direction;
 	inBigDeadlySpin = true;
 }
 
@@ -71,4 +84,4 @@ Vector2 ClockHand::GetLargeExtendedPoint()
 
 bool ClockHand::IsMoving() const { return isAdvancing || inBigDeadlySpin; }
 
-float ClockHand::GetAngle() { return Utils::NormalizeAngle(angleDeg + bigDeadlySpinTime * bigDeadlySpinCoefficient); }
+float ClockHand::GetAngle() { return Utils::NormalizeAngle(angleDeg); }

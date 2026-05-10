@@ -21,6 +21,9 @@ class Player : public Entity
 	void Update() override;
 	void Draw() override;
 	bool IsInvulnerable();
+	float GetMaxHealth() const;
+	float GetStamina() const;
+	float GetMaxStamina() const;
 
 	void Hurt(float amount, DamageType damageType);
 	void Knockback(Vector2 Knockback);
@@ -35,9 +38,14 @@ class Player : public Entity
 	float attackCooldownTimer = 0.0f;
 	float dashCooldown = 0.65f;
 	float dashCooldownTimer = 0.0f;
-	float dashInvulnerabilityDuration = 0.4f;
+	float dashInvulnerabilityDuration = 0.6f;
 	float dashInvulnerabilityTimer = 0.0f;
 	int dashRange = 3;
+
+	float maxStamina = 100.0f;
+	float stamina = 100.0f;
+	float dashStaminaCost = 35.0f;
+	float staminaRecoverRate = 8.1f;
 
 	float healCooldown = 15;
 	float healRate = 10; // Per Second
@@ -52,6 +60,7 @@ class Player : public Entity
 	bool movedThisFrame = false;
 	bool attackedThisFrame = false;
 	float hitAnimationTime = 1000;
+	float hitFlashTimer = 0.0f;
 	Vector2 currentDirection = Vector2(1, 0);
 	Vector2 attackDirection = Vector2(1, 0);
 	Vector2 handpos;

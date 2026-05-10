@@ -12,7 +12,7 @@ class ClockHand : public Entity
 	void Update() override;
 	void Draw() override;
 	void Advance();
-	void BeginBigDeadlySpin(int spinDirection = 0);
+	void BeginBigDeadlySpin(int spinDirection = 0, float spinDegrees = 360.0f);
 	Vector2 GetLargeExtendedPoint();
 	bool IsMoving() const;
 
@@ -24,8 +24,8 @@ class ClockHand : public Entity
 	float thickness;
 	Color color;
 
-	float bigDeadlySpinTime = 0;
-	float bigDeadlySpinCoefficient = 40;
+	float bigDeadlySpinDegreesRemaining = 0.0f;
+	int bigDeadlySpinDirection = 1;
 	bool inBigDeadlySpin = false;
 
 	float advanceTime = 0;

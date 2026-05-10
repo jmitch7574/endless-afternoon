@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "raylib.h"
+#include "screen_shake.h"
 
 RenderTexture2D rt_RenderTexture;
 
@@ -21,12 +22,13 @@ void Renderer::BlipRenderTexture()
 
     int offsetX = (GetScreenWidth() - scaledWidth) / 2;
     int offsetY = (GetScreenHeight() - scaledHeight) / 2;
+    const Vector2 shakeOffset = ScreenShake::GetOffset();
 
     DrawTexturePro(rt_RenderTexture.texture,
                    Rectangle{0, 0, (float)rt_RenderTexture.texture.width,
                                     (float)-rt_RenderTexture.texture
                                     .height}, // Source rectangle (flip vertically)
-                   Rectangle{(float)offsetX, (float)offsetY, (float)scaledWidth,
+                   Rectangle{(float)offsetX + shakeOffset.x * scale, (float)offsetY + shakeOffset.y * scale, (float)scaledWidth,
                              (float)scaledHeight}, // Destination rectangle
                    Vector2{0, 0},                  // Origin at top-left
                    0.0f,                           // No rotation

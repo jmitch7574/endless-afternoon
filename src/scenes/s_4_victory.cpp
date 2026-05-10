@@ -27,7 +27,6 @@ void DrawArenaBackdrop()
 	ArenaManager::DrawLevelGrid();
 	ArenaManager::MaskOutsideOctagon();
 	ArenaManager::DrawOctagonBoundary();
-	ArenaManager::DrawClockMarkers();
 }
 
 void DrawResultClockPlate()

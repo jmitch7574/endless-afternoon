@@ -254,8 +254,9 @@ void Enemy::SpecialAttack2()
 		queuedClockHandSpinDirection = 0;
 	}
 
-	playScene->minuteHand.BeginBigDeadlySpin(spinDirection);
-	playScene->hourHand.BeginBigDeadlySpin(spinDirection);
+	const float spinDegrees = 360.0f + 90.0f * (float)GetRandomValue(0, 3);
+	playScene->minuteHand.BeginBigDeadlySpin(spinDirection, spinDegrees);
+	playScene->hourHand.BeginBigDeadlySpin(spinDirection, spinDegrees);
 }
 
 void Enemy::SpecialAttack3()

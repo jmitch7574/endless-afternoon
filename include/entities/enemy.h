@@ -23,6 +23,12 @@ enum class EnemyEmotion
 	Angry
 };
 
+struct EnemyTrail
+{
+	Vector2 pos;
+	int opacity;
+};
+
 class Enemy : public Entity
 {
   public:
@@ -61,6 +67,9 @@ class Enemy : public Entity
 	static constexpr int SECONDARY_PULSE_SEGMENTS = 96;
 	static constexpr float BASIC_ATTACK_DAMAGE = 15.0f;
 	static constexpr float SECONDARY_ATTACK_DAMAGE = 20.0f;
+	static constexpr int MOVE_TRAIL_SAMPLES = 120;
+	static constexpr int MOVE_TRAIL_OPACITY = 255;
+	static constexpr int MOVE_TRAIL_FADE = 25;
 
 	// State flow
 	void EnterState(EnemyState nextState);
@@ -92,6 +101,8 @@ class Enemy : public Entity
 	void SpecialAttack3();
 
 	// Drawing
+	void UpdateMovementTrail();
+	void DrawMovementTrail();
 	void DrawPunchEffect();
 	void DrawBasicAttackTelegraph();
 	void DrawSecondaryAttackEffect();
@@ -121,7 +132,7 @@ class Enemy : public Entity
 	// Facial Features
 	EnemyEmotion currentEmotion = EnemyEmotion::Angry;
 	float currentEyeRotation = 0;
-	float TargetEyeRotation() { return currentEmotion == EnemyEmotion::Angry ? 45 : 180; };
+	float TargetEyeRotation() { return currentEmotion == EnemyEmotion::Angry ? 45.0f : 180.0f; };
 
 	Vector2 eyeOffsets = Vector2(0, 0);
 	Vector2 targetPupilOffsets;
@@ -137,18 +148,18 @@ class Enemy : public Entity
 
 	float TargetMoustacheGap(float x) 
 	{
-		if (x < -0.2f) return 15;
-		if (x > 0.2f) return 45;
-		return 30;
+		if (x < -0.2f) return 15.0f;
+		if (x > 0.2f) return 45.0f;
+		return 30.0f;
 	};
 	float currentMoustacheGap = 0;
 	float moustacheGapLerp = 0.1f;
 	
 	float TargetMoustacheOffset(float x)
 	{
-		if (x < -0.2f) return -25;
-		if (x > 0.2f) return 25;
-		return 0;
+		if (x < -0.2f) return -25.0f;
+		if (x > 0.2f) return 25.0f;
+		return 0.0f;
 	}
 	float currentMoustacheOffset = 0;
 	float moustacheOffsetLerp = 0.1f;
@@ -160,6 +171,7 @@ class Enemy : public Entity
 	float currentMoveCooldown = 0;
 	int chaseBudget = 6;
 	int chaseMovesTaken = 0;
+	EnemyTrail moveTrail[MOVE_TRAIL_SAMPLES] = {};
 
 	// WindUp / Attack
 	float stateTimer = 0;

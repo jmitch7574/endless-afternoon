@@ -5,6 +5,7 @@
 #endif
 
 #include "renderer.h"
+#include "screen_shake.h"
 #include <chrono>
 #include "resource_loader.h"
 #include "scene_manager.h"
@@ -14,7 +15,9 @@
 // Update the scene that is currently active, and draw it to the render texture.
 void UpdateDrawFrame()
 {
+	const float deltaTime = GetFrameTime();
 	g_SceneManager.Update();
+	ScreenShake::Update(deltaTime);
 
 	BeginTextureMode(rt_RenderTexture);
 	g_SceneManager.Draw();

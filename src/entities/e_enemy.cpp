@@ -1,12 +1,16 @@
 #include "arena_manager.h"
 #include "entities/enemy.h"
 #include "raymath.h"
+#include "screen_shake.h"
 #include <algorithm>
 #include <cstdlib>
 #include "scene.h"
 
 namespace
 {
+constexpr float ENEMY_HIT_SHAKE_STRENGTH = 4.0f;
+constexpr float ENEMY_HIT_SHAKE_DURATION = 0.08f;
+
 int GridX(Vector2 cell) { return (int)cell.x; }
 
 int GridY(Vector2 cell) { return (int)cell.y; }
@@ -50,6 +54,7 @@ Enemy::Enemy(raylib::Vector2 startGridPos) : Entity(ArenaManager::GridPositionTo
 	gridPosition = startGridPos;
 	targetGridPosition = startGridPos;
 	isInGrid = true;
+	positionLastFrame = position;
 }
 Enemy::~Enemy(void) {}
 
@@ -96,7 +101,12 @@ int Enemy::GetNormalAttacksPerCycle() const { return normalAttacksPerCycle; }
 
 int Enemy::GetMaxHealth() const { return maxHealth; }
 
-void Enemy::Hurt(float amount) { health = std::max(0.0f, health - amount); timeSinceLastHit = 0; }
+void Enemy::Hurt(float amount)
+{
+	health = std::max(0.0f, health - amount);
+	timeSinceLastHit = 0;
+	ScreenShake::Shake(ENEMY_HIT_SHAKE_STRENGTH, ENEMY_HIT_SHAKE_DURATION);
+}
 
 void Enemy::SetTargetGridPosition(Vector2 target) { targetGridPosition = target; }
 
@@ -356,11 +366,28 @@ void Enemy::UpdateSpecialRecover(float deltaTime)
 	}
 }
 
+void Enemy::UpdateMovementTrail()
+{
+	for (int i = MOVE_TRAIL_SAMPLES - 1; i > 0; i--)
+	{
+		moveTrail[i] = moveTrail[i - 1];
+		moveTrail[i].opacity -= MOVE_TRAIL_FADE;
+
+		if (Vector2Equals(moveTrail[i].pos, position))
+		{
+			moveTrail[i].opacity = 0;
+		}
+	}
+
+	moveTrail[0] = {position, MOVE_TRAIL_OPACITY};
+}
+
 void Enemy::Update()
 {
 	const float deltaTime = GetFrameTime();
 
 	position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
+	UpdateMovementTrail();
 	currentMoveCooldown -= deltaTime;
 	primaryAttackMovementLockTimer -= deltaTime;
 	currentPrimaryAttackCooldown -= deltaTime;

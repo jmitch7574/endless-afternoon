@@ -22,7 +22,17 @@ constexpr float RED_LIGHT_DAMAGE = 5.0f;
 constexpr float EVIL_ZONE_DAMAGE_INTERVAL = 1.0f;
 constexpr float EVIL_ZONE_DAMAGE = 5.0f;
 constexpr float MOVING_CLOCK_HAND_IMPACT_DAMAGE = 20.0f;
+constexpr float CLOCK_HAND_HUB_RADIUS = 18.0f;
+constexpr float CLOCK_HAND_HUB_INNER_RADIUS = 8.0f;
+constexpr float RESOURCE_BAR_TOTAL_WIDTH = 760.0f;
+constexpr float RESOURCE_BAR_GAP = 40.0f;
+constexpr float RESOURCE_BAR_WIDTH = (RESOURCE_BAR_TOTAL_WIDTH - RESOURCE_BAR_GAP) * 0.5f;
+constexpr float RESOURCE_BAR_HEIGHT = 26.0f;
+constexpr float RESOURCE_BAR_X = ((float)RENDER_TEXTURE_WIDTH - RESOURCE_BAR_TOTAL_WIDTH) * 0.5f;
+constexpr float PLAYER_RESOURCE_BAR_Y = (float)RENDER_TEXTURE_HEIGHT - 58.0f;
+constexpr float RESOURCE_BAR_LERP_SPEED = 9.0f;
 constexpr int RED_LIGHT_CELLS_PER_WAVE = 7;
+constexpr Color CLOCK_HAND_HUB_ORANGE = Color{196, 116, 36, 255};
 
 bool IsSameGridCell(Vector2 a, Vector2 b) { return (int)a.x == (int)b.x && (int)a.y == (int)b.y; }
 
@@ -33,6 +43,38 @@ Rectangle GridCellBounds(Vector2 gridPosition)
 	return Rectangle{worldPosition.x - CELL_SIZE * 0.5f + padding, worldPosition.y - CELL_SIZE * 0.5f + padding,
 					 CELL_SIZE - padding * 2.0f, CELL_SIZE - padding * 2.0f};
 }
+
+void DrawClockHandHub(Vector2 position, bool activated)
+{
+	const Color outerColor = activated ? WHITE : Color{80, 80, 80, 255};
+	const Color innerColor = activated ? CLOCK_HAND_HUB_ORANGE : Color{45, 45, 45, 255};
+
+	DrawCircleV(position, CLOCK_HAND_HUB_RADIUS, outerColor);
+	DrawCircleV(position, CLOCK_HAND_HUB_INNER_RADIUS, innerColor);
+}
+
+float LerpBarValue(float displayedValue, float targetValue, float deltaTime)
+{
+	const float lerpAmount = std::clamp(deltaTime * RESOURCE_BAR_LERP_SPEED, 0.0f, 1.0f);
+	return displayedValue + (targetValue - displayedValue) * lerpAmount;
+}
+
+void DrawResourceBar(Rectangle bounds, float displayedValue, float actualValue, float maxValue, const char *label,
+					 Color fillColor)
+{
+	const float percent = maxValue > 0.0f ? std::clamp(displayedValue / maxValue, 0.0f, 1.0f) : 0.0f;
+	const Rectangle fill = {bounds.x + 4.0f, bounds.y + 4.0f, (bounds.width - 8.0f) * percent, bounds.height - 8.0f};
+	const Color darkBacking = Color{22, 18, 14, 235};
+
+	DrawRectangleRec(bounds, darkBacking);
+	DrawRectangleRec(fill, fillColor);
+	DrawRectangleLinesEx(bounds, 3.0f, WHITE);
+
+	const char *text = TextFormat("%s  %.0f / %.0f", label, actualValue, maxValue);
+	const int textSize = 20;
+	const int textWidth = MeasureText(text, textSize);
+	DrawText(text, (int)(bounds.x + (bounds.width - textWidth) * 0.5f), (int)(bounds.y + 3.0f), textSize, WHITE);
+}
 } // namespace
 
 PlayMode *playScene;
@@ -42,14 +84,19 @@ PlayMode::PlayMode()
 	  hourHand(Vector2{960, 540}, -90.0f, 280.0f, 12.0f, WHITE), dangerEffects()
 {
 	playScene = this;
+	displayedEnemyHealth = enemy.GetHealth();
+	displayedPlayerHealth = player.GetHealth();
+	displayedPlayerStamina = player.GetStamina();
 }
 PlayMode::~PlayMode(void) { playScene = nullptr; }
 
 void PlayMode::Update()
 {
+	const float deltaTime = GetFrameTime();
+
 	if (victoryTriggered || gameOverTriggered)
 	{
-		resultTransitionTimer -= GetFrameTime();
+		resultTransitionTimer -= deltaTime;
 		if (resultTransitionTimer <= 0.0f)
 		{
 			if (victoryTriggered)
@@ -83,9 +130,10 @@ void PlayMode::Update()
 	}
 	minuteHand.Update();
 	hourHand.Update();
-	UpdateRedLightGreenLight(GetFrameTime());
-	UpdateEvilZone(GetFrameTime());
+	UpdateRedLightGreenLight(deltaTime);
+	UpdateEvilZone(deltaTime);
 	UpdateMovingClockHandImpact();
+	UpdateBarDisplays(deltaTime);
 
 	if (enemy.GetHealth() <= 0)
 	{
@@ -111,6 +159,7 @@ void PlayMode::Draw()
 	// ArenaManager::DrawClockMarkers();
 	hourHand.Draw();
 	minuteHand.Draw();
+	DrawClockHandHub(minuteHand.GetPosition(), minuteHand.activated || hourHand.activated);
 	if (!gameOverTriggered)
 	{
 		player.Draw();
@@ -120,6 +169,7 @@ void PlayMode::Draw()
 		enemy.Draw();
 	}
 	DrawEnemyHealthBar();
+	DrawPlayerBars();
 	dangerEffects.Draw();
 #ifndef NDEBUG
 	DrawText(TextFormat("Player Pos: %f, %f", player.gridPosition.x, player.gridPosition.y), 20, 20, 20, WHITE);
@@ -174,6 +224,13 @@ void PlayMode::BeginGameOver()
 
 	gameOverTriggered = true;
 	resultTransitionTimer = 0.6f;
+}
+
+void PlayMode::UpdateBarDisplays(float deltaTime)
+{
+	displayedEnemyHealth = LerpBarValue(displayedEnemyHealth, enemy.GetHealth(), deltaTime);
+	displayedPlayerHealth = LerpBarValue(displayedPlayerHealth, player.GetHealth(), deltaTime);
+	displayedPlayerStamina = LerpBarValue(displayedPlayerStamina, player.GetStamina(), deltaTime);
 }
 
 void PlayMode::UpdateEvilZone(float deltaTime)
@@ -274,12 +331,12 @@ void PlayMode::UpdateBossPhaseFromHealth()
 
 void PlayMode::DrawEnemyHealthBar()
 {
-	const float barWidth = 760.0f;
+	const float barWidth = RESOURCE_BAR_TOTAL_WIDTH;
 	const float barHeight = 28.0f;
-	const float barX = ((float)RENDER_TEXTURE_WIDTH - barWidth) * 0.5f;
+	const float barX = RESOURCE_BAR_X;
 	const float barY = 24.0f;
 	const float healthPercent =
-		enemy.GetMaxHealth() > 0 ? std::clamp(enemy.GetHealth() / (float)enemy.GetMaxHealth(), 0.0f, 1.0f) : 0.0f;
+		enemy.GetMaxHealth() > 0 ? std::clamp(displayedEnemyHealth / (float)enemy.GetMaxHealth(), 0.0f, 1.0f) : 0.0f;
 
 	const Rectangle background = {barX, barY, barWidth, barHeight};
 	const Rectangle fill = {barX + 4.0f, barY + 4.0f, (barWidth - 8.0f) * healthPercent, barHeight - 8.0f};
@@ -300,6 +357,18 @@ void PlayMode::DrawEnemyHealthBar()
 	const int textSize = 22;
 	const int textWidth = MeasureText(healthText, textSize);
 	DrawText(healthText, (int)(barX + (barWidth - textWidth) * 0.5f), (int)(barY + 3.0f), textSize, WHITE);
+}
+
+void PlayMode::DrawPlayerBars()
+{
+	const Rectangle healthBounds = {RESOURCE_BAR_X, PLAYER_RESOURCE_BAR_Y, RESOURCE_BAR_WIDTH, RESOURCE_BAR_HEIGHT};
+	const Rectangle staminaBounds = {RESOURCE_BAR_X + RESOURCE_BAR_WIDTH + RESOURCE_BAR_GAP, PLAYER_RESOURCE_BAR_Y,
+									 RESOURCE_BAR_WIDTH, RESOURCE_BAR_HEIGHT};
+
+	DrawResourceBar(healthBounds, displayedPlayerHealth, player.GetHealth(), player.GetMaxHealth(), "HEALTH",
+					Color{194, 55, 55, 255});
+	DrawResourceBar(staminaBounds, displayedPlayerStamina, player.GetStamina(), player.GetMaxStamina(), "STAMINA",
+					Color{64, 155, 225, 255});
 }
 
 void PlayMode::UpdateRedLightGreenLight(float deltaTime)

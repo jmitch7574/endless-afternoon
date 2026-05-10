@@ -4,6 +4,7 @@
 #include "keybinds.h"
 #include "raylib-cpp.hpp"
 #include "scene.h"
+#include "screen_shake.h"
 #include "utils.h"
 #include <algorithm>
 #include <cmath>
@@ -12,6 +13,12 @@
 namespace
 {
 constexpr int ARENA_CENTER_GRID = CELL_COUNT / 2;
+constexpr float PUNCH_VISUAL_SPEED = 2.5f;
+constexpr float HIT_FLASH_DURATION = 0.08f;
+constexpr float PLAYER_HIT_SHAKE_STRENGTH = 6.0f;
+constexpr float PLAYER_HIT_SHAKE_DURATION = 0.12f;
+constexpr float PRIMARY_ATTACK_DAMAGE = 10.0f;
+constexpr float DASH_ATTACK_DAMAGE = PRIMARY_ATTACK_DAMAGE * 0.5f;
 
 int GridX(Vector2 gridPosition) { return (int)gridPosition.x; }
 
@@ -144,6 +151,12 @@ Player::~Player(void) {}
 
 bool Player::IsInvulnerable() { return dashInvulnerabilityTimer > 0.0f; }
 
+float Player::GetMaxHealth() const { return 100.0f; }
+
+float Player::GetStamina() const { return stamina; }
+
+float Player::GetMaxStamina() const { return maxStamina; }
+
 void Player::Update()
 {
 
@@ -159,6 +172,8 @@ void Player::Update()
 	dashCooldownTimer -= deltaTime;
 	dashInvulnerabilityTimer -= deltaTime;
 	hitAnimationTime += deltaTime;
+	hitFlashTimer = std::max(hitFlashTimer - deltaTime, 0.0f);
+	stamina = std::min(maxStamina, stamina + staminaRecoverRate * deltaTime);
 
 	Vector2 actionDirection = GetHeldMovementDirection();
 	if (IsZeroDirection(actionDirection))
@@ -211,7 +226,8 @@ void Player::Update()
 
 	// THE FIST
 
-	float hitAnimationLerp = sinf(3.5f * sqrtf(hitAnimationTime));
+	const float punchVisualTime = hitAnimationTime * PUNCH_VISUAL_SPEED;
+	float hitAnimationLerp = sinf(3.5f * sqrtf(punchVisualTime));
 	hitAnimationLerp = std::max(hitAnimationLerp, 0.0f);
 
 	Vector2 handStart = Vector2(0, 20);
@@ -225,7 +241,7 @@ void Player::Update()
 
 	threshold = std::max(threshold, peakThreshold);
 
-	if (hitAnimationTime < 1)
+	if (punchVisualTime < 1)
 	{
 		handpos = Utils::BezierLerp(handStart, handEnd, ControlOne, ControlTwo, hitAnimationLerp);
 		if (isPunchFlipped)
@@ -245,7 +261,7 @@ void Player::Update()
 		float angle = Utils::Vector2ToAngle(attackDirection) * PI / 180.0f;
 		trailPos = Vector2Rotate(trailPos, angle);
 
-		punchTrail[i] = {trailPos, std::max(255 - (int)(hitAnimationTime * (400 - i * 5)), 0)};
+		punchTrail[i] = {trailPos, std::max(255 - (int)(punchVisualTime * (400 - i * 5)), 0)};
 	}
 
 	// Healing
@@ -260,6 +276,8 @@ void Player::Update()
 
 void Player::Draw()
 {
+	const float punchVisualTime = hitAnimationTime * PUNCH_VISUAL_SPEED;
+
 	for (int i = 119; i > 0; i--)
 	{
 		if (trail[i].opacity < 0)
@@ -275,17 +293,18 @@ void Player::Draw()
 		DrawCircleV(position + punchTrail[i].pos, CELL_SIZE / 6.0f,
 					Color{102, 191, 255, (unsigned char)punchTrail[i].opacity});
 	}
-	if (hitAnimationTime < 1)
+	if (punchVisualTime < 1)
 	{
 
 		DrawCircleV(position + handpos, CELL_SIZE / 6.0f,
-					Color{102, 191, 255, (unsigned char)(255 - hitAnimationTime * 255)});
+					Color{102, 191, 255, (unsigned char)(255 - punchVisualTime * 255)});
 	}
 
-	const Color playerColor = IsInvulnerable() ? Color{170, 235, 255, 255} : SKYBLUE;
+	const bool shouldFlashWhite = hitFlashTimer > 0.0f;
+	const Color playerColor = shouldFlashWhite ? WHITE : (IsInvulnerable() ? Color{170, 235, 255, 255} : SKYBLUE);
 	DrawCircleV(position, CELL_SIZE / 2.0f, playerColor);
 
-	if (hitAnimationTime < 1)
+	if (punchVisualTime < 1)
 	{
 		DrawCircleV(position + handpos, CELL_SIZE / 6.0f, playerColor);
 	}
@@ -342,13 +361,13 @@ void Player::TryAttack(Vector2 dir)
 
 	if (playScene != nullptr && IsEnemyBlockingGridPosition(Vector2Add(gridPosition, attackDir)))
 	{
-		playScene->EnemyHit(10.0f);
+		playScene->EnemyHit(PRIMARY_ATTACK_DAMAGE);
 	}
 }
 
 void Player::TryDash(Vector2 dir)
 {
-	if (dashCooldownTimer > 0.0f)
+	if (dashCooldownTimer > 0.0f || stamina < dashStaminaCost)
 	{
 		return;
 	}
@@ -365,8 +384,9 @@ void Player::TryDash(Vector2 dir)
 	bool foundLandingPastEnemy = false;
 	Vector2 landingPastEnemy = startGridPosition;
 	int enemyHitStep = 0;
+	const int currentDashRange = dashDir.x != 0.0f && dashDir.y != 0.0f ? 2 : dashRange;
 
-	for (int step = 1; step <= dashRange; step++)
+	for (int step = 1; step <= currentDashRange; step++)
 	{
 		const Vector2 candidate = Vector2Add(startGridPosition, Vector2Scale(dashDir, (float)step));
 		if (!IsValidArenaGridPosition(candidate))
@@ -400,7 +420,7 @@ void Player::TryDash(Vector2 dir)
 			Vector2 pushedLanding = startGridPosition;
 			bool foundPushedLanding = false;
 
-			for (int step = enemyHitStep; step <= dashRange; step++)
+			for (int step = enemyHitStep; step <= currentDashRange; step++)
 			{
 				const Vector2 candidate = Vector2Add(startGridPosition, Vector2Scale(dashDir, (float)step));
 				if (!IsValidArenaGridPosition(candidate))
@@ -434,9 +454,10 @@ void Player::TryDash(Vector2 dir)
 
 	gridPosition = destination;
 	currentDirection = dashDir;
+	stamina = std::max(0.0f, stamina - dashStaminaCost);
 	if (hitEnemy && playScene != nullptr)
 	{
-		playScene->EnemyHit(15.0f);
+		playScene->EnemyHit(DASH_ATTACK_DAMAGE);
 	}
 	movedThisFrame = true;
 	dashedThisFrame = true;
@@ -454,6 +475,8 @@ void Player::Hurt(float amount, DamageType damageType)
 	timeSinceLastDamage = 0;
 
 	health = std::max(0.0f, health - amount);
+	hitFlashTimer = HIT_FLASH_DURATION;
+	ScreenShake::Shake(PLAYER_HIT_SHAKE_STRENGTH, PLAYER_HIT_SHAKE_DURATION);
 
 	//if (damageType == D_Enemy) g_SceneManager.hitstunFrames = amount / 1.5f;
 	DangerEffects::singleton->DisplayHurt();

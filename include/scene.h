@@ -78,9 +78,11 @@ class PlayMode : public Scene
 
 	void BeginVictory();
 	void BeginGameOver();
+	void UpdateBarDisplays(float deltaTime);
 	void UpdateBossPhaseFromHealth();
 	void UpdateEvilZone(float deltaTime);
 	void UpdateMovingClockHandImpact();
+	void DrawPlayerBars();
 	void UpdateRedLightGreenLight(float deltaTime);
 	void DrawRedLightGreenLight();
 	void QueueRedLightCells();
@@ -92,6 +94,9 @@ class PlayMode : public Scene
 	bool gameOverTriggered = false;
 	float resultTransitionTimer = 0.0f;
 	int bossHealthPhase = 0;
+	float displayedEnemyHealth = 0.0f;
+	float displayedPlayerHealth = 0.0f;
+	float displayedPlayerStamina = 0.0f;
 	bool playerTouchingMovingClockHand = false;
 	bool redLightGreenLightActive = false;
 	float redLightGreenLightTimer = 0.0f;
