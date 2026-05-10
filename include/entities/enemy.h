@@ -92,6 +92,8 @@ class Enemy : public Entity
 	void UpdateSecondaryRecover(float deltaTime);
 	void UpdateSpecialWindUp(float deltaTime);
 	void UpdateSpecialRecover(float deltaTime);
+	void StartFloatyPhase(float duration);
+	bool UpdateFloatyPhase(float deltaTime);
 
 	// Attack behavior
 	void TryPrimaryAttack();
@@ -105,6 +107,8 @@ class Enemy : public Entity
 	void SpinningTopSecondaryAttack(float deltaTime);
 	void FinishSecondaryAttack();
 	void RunSelectedSpecialAttack();
+	void RunSpecialAttackEffect(int specialAttack);
+	int GetRandomSpecialAttack(int excludedSpecialAttack) const;
 	void SpecialAttack1();
 	void SpecialAttack2();
 	void SpecialAttack3();
@@ -240,8 +244,8 @@ class Enemy : public Entity
 	static constexpr float SPINNING_SECONDARY_DAMAGE = 10.0f;
 	float specialWindUpDuration = 1.6f;
 	float specialRecoverDuration = 0.65f;
-	int currentSpecialAttack = 2;
-	int nextSpecialAttack = 2;
+	int currentSpecialAttack = 1;
+	int nextSpecialAttack = 1;
 	int queuedClockHandSpinDirection = 0;
 
 	// Attack cycle
