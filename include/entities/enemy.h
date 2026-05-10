@@ -54,7 +54,7 @@ class Enemy : public Entity
 	int GetMaxHealth() const;
 	float GetOpacity() { return opacity; }
 	void Hurt(float amount);
-	bool OccupiesGridPosition(Vector2 target) const;
+	bool OccupiesGridPosition(Vector2 target);
 	bool TryPushGridPosition(Vector2 direction);
 
 	bool isInGrid;
@@ -142,7 +142,7 @@ class Enemy : public Entity
 
 	// Helpers
 	static int DistanceFromBossFootprint(Vector2 bossCenter, Vector2 cell);
-	static bool BossFootprintContainsCell(Vector2 bossCenter, Vector2 cell);
+	bool BossFootprintContainsCell(Vector2 bossCenter, Vector2 cell);
 	static bool IsBossFootprintValid(Vector2 bossCenter);
 	static Color ClockHandOrange(unsigned char alpha);
 									
@@ -251,8 +251,13 @@ class Enemy : public Entity
 	int primaryCyclesBeforeSpecial = 2;
 
 	// Enemy Colours
-	inline Color ClockWhite() { return Color{255, 255, 255, (unsigned char)(Enemy::GetOpacity() * 255.0f)}; }
-	inline Color ClockBrown() { return Color{127, 106, 79, (unsigned char)(Enemy::GetOpacity() * 255.0f)}; }
-	inline Color ClockOrange() { return Color{255, 161, 0, (unsigned char)(Enemy::GetOpacity() * 255.0f)}; }
-	inline Color ClockRest() { return Fade(ClockOrange(), 0.45f); }
+	Color ClockWhite() { return Color{255, 255, 255, (unsigned char)(Enemy::GetOpacity() * 255.0f)}; }
+	Color ClockBrown() { return Color{127, 106, 79, (unsigned char)(Enemy::GetOpacity() * 255.0f)}; }
+	Color ClockOrange() 
+	{ 
+		if (worldSpace == WorldSpace::Floaty && specialStateTimeIn >= 1 && specialStateTimeLeft >= 1)
+			return Color{255, 161, 0, (unsigned char)(Enemy::GetOpacity() * 255.0f)};
+		return Color{255, 161, 0, (unsigned char)(Enemy::GetOpacity() * 255.0f)};
+	}
+	Color ClockRest() { return Fade(ClockOrange(), 0.45f); }
 };

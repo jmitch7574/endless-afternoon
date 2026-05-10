@@ -5,7 +5,6 @@
 #include "utils.h"
 #include <algorithm>
 #include <cmath>
-#include <resource_loader.h>
 
 namespace
 {
@@ -26,10 +25,6 @@ void Enemy::TriggerPunchEffect()
 {
 	punchAnimationTime = 0.0f;
 	punchEffectHasHit = false;
-	punchDirection = GetPunchDirectionToTarget();
-	punchHookSide = currentBasicAttackIsRightSwing ? 1.0f : -1.0f;
-	PlaySound(Resources::GetWhoosh());
-	
 }
 
 void Enemy::UpdatePunchEffect(float deltaTime)

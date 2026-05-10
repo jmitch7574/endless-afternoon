@@ -42,6 +42,7 @@ int Enemy::DistanceFromBossFootprint(Vector2 bossCenter, Vector2 cell)
 
 bool Enemy::BossFootprintContainsCell(Vector2 bossCenter, Vector2 cell)
 {
+	if (worldSpace == WorldSpace::Floaty) return false;
 	return DistanceFromBossFootprint(bossCenter, cell) == 0;
 }
 
@@ -124,7 +125,7 @@ void Enemy::Hurt(float amount)
 
 void Enemy::SetTargetGridPosition(Vector2 target) { targetGridPosition = target; }
 
-bool Enemy::OccupiesGridPosition(Vector2 target) const { return BossFootprintContainsCell(gridPosition, target); }
+bool Enemy::OccupiesGridPosition(Vector2 target) { return BossFootprintContainsCell(gridPosition, target); }
 
 bool Enemy::TryPushGridPosition(Vector2 direction)
 {
@@ -413,16 +414,9 @@ void Enemy::Update()
 	const float deltaTime = GetFrameTime();
 	UpdateEnemyFace();
 
-	position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
-	UpdateMovementTrail();
-	currentMoveCooldown -= deltaTime;
-	primaryAttackMovementLockTimer -= deltaTime;
-	currentPrimaryAttackCooldown -= deltaTime;
-	timeSinceLastHit += deltaTime;
-	UpdatePunchEffect(deltaTime);
-	worldSpace = specialStateTimeLeft > 0 ? WorldSpace::Floaty : WorldSpace::Grid;
-
 	opacity = 1;
+
+	worldSpace = specialStateTimeLeft > 0 ? WorldSpace::Floaty : WorldSpace::Grid;
 
 	if (worldSpace == WorldSpace::Grid)
 	{

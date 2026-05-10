@@ -110,17 +110,17 @@ void Enemy::DrawEnemyFace()
 	const Vector2 moustacheBase = GetHandstacheBase();
 	if (!ShouldHideHandstache(false))
 	{
-		CustomDraws::DrawArrow(moustacheBase, GetHandstacheAngle(false), GetHandstacheLength(false),
-							   HANDSTACHE_THICKNESS, HANDSTACHE_FLETCH_LENGTH, HANDSTACHE_FLETCH_ANGLE, WHITE);
+		CustomDraws::DrawArrow(moustacheBase, GetHandstacheAngle(false), GetHandstacheLength(false) * scale,
+							   HANDSTACHE_THICKNESS * scale, HANDSTACHE_FLETCH_LENGTH * scale, HANDSTACHE_FLETCH_ANGLE, ClockWhite());
 	}
 
 	if (!ShouldHideHandstache(true))
 	{
-		CustomDraws::DrawArrow(moustacheBase, GetHandstacheAngle(true), GetHandstacheLength(true),
-							   HANDSTACHE_THICKNESS, HANDSTACHE_FLETCH_LENGTH, HANDSTACHE_FLETCH_ANGLE, WHITE);
+		CustomDraws::DrawArrow(moustacheBase, GetHandstacheAngle(true), GetHandstacheLength(true) * scale,
+							   HANDSTACHE_THICKNESS * scale, HANDSTACHE_FLETCH_LENGTH * scale, HANDSTACHE_FLETCH_ANGLE, ClockWhite());
 	}
 
-	DrawCircleV(moustacheBase, HANDSTACHE_CENTER_DOT_RADIUS, WHITE);
+	DrawCircleV(moustacheBase, HANDSTACHE_CENTER_DOT_RADIUS, ClockWhite());
 }
 
 Color Enemy::ClockHandOrange(unsigned char alpha) { return Color{196, 116, 36, alpha}; }
@@ -487,5 +487,6 @@ void Enemy::Draw()
 
 Rectangle Enemy::GetBBoxWorld()
 {
+	if (worldSpace == WorldSpace::Floaty) return Rectangle(0, 0, 0, 0);
 	return Rectangle(position.x - CELL_SIZE * 1.5f, position.y - CELL_SIZE * 1.5f, CELL_SIZE * 3, CELL_SIZE * 3);
 }
