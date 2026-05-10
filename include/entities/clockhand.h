@@ -19,6 +19,10 @@ class ClockHand : public Entity
 	bool activated = false;
 
   protected:
+	void StartAdvance();
+	void StartQueuedAdvanceIfReady();
+	void CompleteAdvanceInstantly();
+
 	float angleDeg;
 	float length;
 	float thickness;
@@ -34,4 +38,5 @@ class ClockHand : public Entity
 	float advanceTargetAngleDeg = 0;
 	float targetAngleDeg = 0;
 	bool isAdvancing = false;
+	int queuedAdvances = 0;
 };

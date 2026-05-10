@@ -33,6 +33,7 @@ void ClockHand::Update()
 			targetAngleDeg = angleDeg;
 			inBigDeadlySpin = false;
 			bigDeadlySpinDegreesRemaining = 0.0f;
+			StartQueuedAdvanceIfReady();
 		}
 	}
 
@@ -45,8 +46,10 @@ void ClockHand::Update()
 
 		if (progress >= 1.0f)
 		{
-			angleDeg = advanceTargetAngleDeg;
+			angleDeg = Utils::NormalizeAngle(advanceTargetAngleDeg);
+			targetAngleDeg = angleDeg;
 			isAdvancing = false;
+			StartQueuedAdvanceIfReady();
 		}
 	}
 }
@@ -60,17 +63,60 @@ void ClockHand::Draw()
 
 void ClockHand::Advance()
 {
-	targetAngleDeg += 90.0f;
+	if (IsMoving())
+	{
+		queuedAdvances++;
+		return;
+	}
+
+	StartAdvance();
+}
+
+void ClockHand::StartAdvance()
+{
+	targetAngleDeg = angleDeg + 90.0f;
 	advanceStartAngleDeg = angleDeg;
 	advanceTargetAngleDeg = targetAngleDeg;
 	isAdvancing = true;
 	advanceTime = 0;
 }
 
+void ClockHand::StartQueuedAdvanceIfReady()
+{
+	if (IsMoving() || queuedAdvances <= 0)
+	{
+		return;
+	}
+
+	queuedAdvances--;
+	StartAdvance();
+}
+
+void ClockHand::CompleteAdvanceInstantly()
+{
+	if (!isAdvancing)
+	{
+		return;
+	}
+
+	angleDeg = Utils::NormalizeAngle(advanceTargetAngleDeg);
+	targetAngleDeg = angleDeg;
+	isAdvancing = false;
+	advanceTime = 0.0f;
+}
+
 void ClockHand::BeginBigDeadlySpin(int spinDirection, float spinDegrees)
 {
 	const int direction = spinDirection == 0 ? (GetRandomValue(0, 99) < 50 ? 1 : -1) : (spinDirection < 0 ? -1 : 1);
 	const float totalSpinDegrees = fmaxf(fabsf(spinDegrees), 1.0f);
+
+	CompleteAdvanceInstantly();
+	while (queuedAdvances > 0)
+	{
+		angleDeg = Utils::NormalizeAngle(angleDeg + 90.0f);
+		targetAngleDeg = angleDeg;
+		queuedAdvances--;
+	}
 
 	bigDeadlySpinDegreesRemaining = totalSpinDegrees;
 	bigDeadlySpinDirection = direction;

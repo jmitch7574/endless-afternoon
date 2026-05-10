@@ -19,19 +19,12 @@ float NormalizeAngle(float angle)
 	return angle;
 }
 
-float AngleDifference(float a, float b)
-{
-	const float diff = fabsf(NormalizeAngle(a - b));
-	return diff > 180.0f ? 360.0f - diff : diff;
-}
 } // namespace
 
 void Enemy::TriggerPunchEffect()
 {
 	punchAnimationTime = 0.0f;
 	punchEffectHasHit = false;
-	punchDirection = GetPunchDirectionToTarget();
-	punchHookSide = currentBasicAttackIsRightSwing ? 1.0f : -1.0f;
 }
 
 void Enemy::UpdatePunchEffect(float deltaTime)
@@ -68,19 +61,11 @@ bool Enemy::PunchEffectHitsPlayerAtProgress(float progress) const
 		return false;
 	}
 
-	const float easedProgress = progress * progress * (3.0f - 2.0f * progress);
-	const float targetAngle = Utils::Vector2ToAngle(punchDirection);
-	const float sweepStart = targetAngle - punchHookSide * (CLOCK_HAND_SWEEP_DEGREES * 0.5f);
-	const float sweepAngle = sweepStart + punchHookSide * CLOCK_HAND_SWEEP_DEGREES * easedProgress;
-	const Vector2 sweepDirection = Utils::AngleToVector2(sweepAngle);
-	const float faceRadius = CELL_SIZE * 1.5f;
-	const float innerRadius = faceRadius + CELL_SIZE * 0.05f;
-	const float handLength = currentBasicAttackIsRightSwing ? CELL_SIZE * 2.0f : CELL_SIZE;
-	const Vector2 handPivot = Vector2Add(position, Vector2Scale(sweepDirection, innerRadius));
-	const Vector2 handEnd = Vector2Add(handPivot, Vector2Scale(sweepDirection, handLength));
+	const Vector2 handBase = GetPrimarySwingHandBase(progress);
+	const Vector2 handTip = GetPrimarySwingHandTip(progress);
 	const float playerRadius = CELL_SIZE * 0.45f;
 
-	return Utils::LineIntersectsCircle(handPivot, handEnd, playScene->player.GetPosition(), playerRadius);
+	return Utils::LineIntersectsCircle(handBase, handTip, playScene->player.GetPosition(), playerRadius);
 }
 
 void Enemy::TryPrimaryAttack()
@@ -109,13 +94,7 @@ void Enemy::PrimaryAttack()
 	normalAttackCount++;
 	nextBasicAttackIsRightSwing = !currentBasicAttackIsRightSwing;
 
-	if (normalAttackCount >= normalAttacksPerCycle)
-	{
-		CompletePrimaryAttackCycle();
-		return;
-	}
-
-	EnterRecover(ATTACK_RECOVER_DURATION);
+	EnterRecover(normalAttackCount >= normalAttacksPerCycle ? CYCLE_RECOVER_DURATION : ATTACK_RECOVER_DURATION);
 }
 
 void Enemy::CompletePrimaryAttackCycle()
@@ -176,6 +155,7 @@ void Enemy::PulseSecondaryAttack(float deltaTime)
 void Enemy::SpinningTopSecondaryAttack(float deltaTime)
 {
 	stateTimer -= deltaTime;
+	const float previousSpinAngle = spinningSecondarySpinAngle;
 	spinningSecondarySpinAngle =
 		NormalizeAngle(spinningSecondarySpinAngle + spinningSecondarySpinDirection * spinningSecondarySpinSpeed * deltaTime);
 	spinningSecondaryDamageCooldown -= deltaTime;
@@ -185,19 +165,30 @@ void Enemy::SpinningTopSecondaryAttack(float deltaTime)
 		TryMoveTowardTarget();
 	}
 
-	const int playerDistance = DistanceFromBossFootprint(gridPosition, targetGridPosition);
-	if (playerDistance > 0 && playerDistance <= SPINNING_SECONDARY_RANGE && spinningSecondaryDamageCooldown <= 0.0f)
+	if (playScene != nullptr && spinningSecondaryDamageCooldown <= 0.0f)
 	{
-		const Vector2 playerOffset = Vector2Subtract(targetGridPosition, gridPosition);
-		const float playerAngle = atan2f(playerOffset.y, playerOffset.x) * RAD2DEG;
-		const bool hitByHourHand = AngleDifference(playerAngle, spinningSecondarySpinAngle) <= 28.0f;
-		const bool hitByMinuteHand = AngleDifference(playerAngle, spinningSecondarySpinAngle + 180.0f) <= 28.0f;
+		constexpr int sampleCount = 6;
+		const Vector2 playerPosition = playScene->player.GetPosition();
+		const float playerRadius = CELL_SIZE * 0.45f;
 
-		if ((hitByHourHand || hitByMinuteHand) && playScene != nullptr)
+		for (int i = 0; i <= sampleCount; i++)
 		{
-			playScene->player.Hurt(SPINNING_SECONDARY_DAMAGE, D_Enemy);
-			spinningSecondaryDamageCooldown = spinningSecondaryDamageInterval;
-		}
+			const float t = (float)i / (float)sampleCount;
+			const float sampleAngle = previousSpinAngle + spinningSecondarySpinDirection * spinningSecondarySpinSpeed * deltaTime * t;
+			const bool hitByLeftHand =
+				Utils::LineIntersectsCircle(GetHeldHandBase(sampleAngle), GetHeldHandTip(sampleAngle, false),
+											playerPosition, playerRadius);
+			const bool hitByRightHand =
+				Utils::LineIntersectsCircle(GetHeldHandBase(sampleAngle + 180.0f), GetHeldHandTip(sampleAngle + 180.0f, true),
+											playerPosition, playerRadius);
+
+			if (hitByLeftHand || hitByRightHand)
+			{
+				playScene->player.Hurt(SPINNING_SECONDARY_DAMAGE, D_Enemy);
+				spinningSecondaryDamageCooldown = spinningSecondaryDamageInterval;
+				break;
+			}
+		}	
 	}
 
 	if (stateTimer <= 0)

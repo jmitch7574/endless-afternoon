@@ -2,6 +2,7 @@
 #include "entities/enemy.h"
 #include "raymath.h"
 #include "screen_shake.h"
+#include "utils.h"
 #include <algorithm>
 #include <cstdlib>
 #include "scene.h"
@@ -14,6 +15,16 @@ constexpr float ENEMY_HIT_SHAKE_DURATION = 0.08f;
 int GridX(Vector2 cell) { return (int)cell.x; }
 
 int GridY(Vector2 cell) { return (int)cell.y; }
+
+float DirectedAngleDistance(float startAngle, float endAngle, float direction)
+{
+	if (direction >= 0.0f)
+	{
+		return Utils::NormalizeAngle(endAngle - startAngle);
+	}
+
+	return Utils::NormalizeAngle(startAngle - endAngle);
+}
 } // namespace
 
 int Enemy::DistanceFromBossFootprint(Vector2 bossCenter, Vector2 cell)
@@ -151,6 +162,18 @@ void Enemy::EnterState(EnemyState nextState)
 		stateTimer = baseAttackWindUpDuration;
 		attackTargetX = (int)targetGridPosition.x;
 		attackTargetY = (int)targetGridPosition.y;
+		punchDirection = GetPunchDirectionToTarget();
+		{
+			const float handstacheAngle = GetHandstacheAngle(!currentBasicAttackIsRightSwing);
+			const float targetAngle = Utils::Vector2ToAngle(punchDirection);
+			const float clockwiseDistance = DirectedAngleDistance(handstacheAngle, targetAngle, 1.0f);
+			const float counterClockwiseDistance = DirectedAngleDistance(handstacheAngle, targetAngle, -1.0f);
+			punchHookSide = clockwiseDistance <= counterClockwiseDistance ? 1.0f : -1.0f;
+			punchStartAngle = handstacheAngle - punchHookSide * CLOCK_HAND_PULLBACK_DEGREES;
+
+			const float degreesToTarget = DirectedAngleDistance(punchStartAngle, targetAngle, punchHookSide);
+			punchSweepDegrees = std::max(CLOCK_HAND_SWEEP_DEGREES, degreesToTarget + CLOCK_HAND_TARGET_OVERSHOOT_DEGREES);
+		}
 		break;
 	case EnemyState::Attack:
 		stateTimer = 0.0f;
@@ -170,6 +193,9 @@ void Enemy::EnterState(EnemyState nextState)
 	case EnemyState::SecondaryAttack:
 		if (currentSecondaryAttack == 2)
 		{
+			spinningSecondarySpinAngle = Utils::NormalizeAngle(spinningSecondarySpinAngle +
+															   spinningSecondarySpinDirection *
+																   SPINNING_SECONDARY_WINDUP_ROTATION_DEGREES);
 			stateTimer = spinningSecondaryAttackDuration;
 			spinningSecondaryDamageCooldown = 0.0f;
 		}
@@ -299,6 +325,7 @@ void Enemy::UpdateWindUp(float deltaTime)
 	if (stateTimer <= 0)
 	{
 		EnterState(EnemyState::Attack);
+		PrimaryAttack();
 	}
 }
 
@@ -310,24 +337,18 @@ void Enemy::UpdateRecover(float deltaTime)
 		return;
 	}
 
+	if (normalAttackCount >= normalAttacksPerCycle && punchAnimationTime < PUNCH_EFFECT_DURATION)
+	{
+		return;
+	}
+
 	if (normalAttackCount < normalAttacksPerCycle)
 	{
 		EnterState(EnemyState::Advance);
 		return;
 	}
 
-	normalAttackCount = 0;
-	primaryCyclesCompleted++;
-
-	if (primaryCyclesCompleted >= primaryCyclesBeforeSpecial)
-	{
-		primaryCyclesCompleted = 0;
-		EnterState(EnemyState::SpecialWindUp);
-	}
-	else
-	{
-		EnterState(EnemyState::SecondaryWindUp);
-	}
+	CompletePrimaryAttackCycle();
 }
 
 void Enemy::UpdateSecondaryWindUp(float deltaTime)

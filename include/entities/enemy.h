@@ -62,6 +62,8 @@ class Enemy : public Entity
 	static constexpr float CHASE_TIMEOUT_RECOVER_DURATION = 0.55f;
 	static constexpr float PUNCH_EFFECT_DURATION = 0.75f;
 	static constexpr float CLOCK_HAND_SWEEP_DEGREES = 125.0f;
+	static constexpr float CLOCK_HAND_TARGET_OVERSHOOT_DEGREES = 35.0f;
+	static constexpr float CLOCK_HAND_PULLBACK_DEGREES = 28.0f;
 	static constexpr int CLOCK_HAND_TRAIL_SAMPLES = 14;
 	static constexpr float CLOCK_HAND_TRAIL_STEP = 0.02f;
 	static constexpr int SECONDARY_PULSE_SEGMENTS = 96;
@@ -107,9 +109,26 @@ class Enemy : public Entity
 	void DrawBasicAttackTelegraph();
 	void DrawSecondaryAttackEffect();
 	void DrawSpinningSecondaryAttackEffect();
+	void DrawDetachedHand(Vector2 handPosition, unsigned char alpha, float scale = 1.0f,
+						  bool holdingHandstache = false, float heldAngle = 0.0f,
+						  float heldHandstacheLength = 0.0f);
 
 	// Targeting
 	Vector2 GetPunchDirectionToTarget() const;
+	float GetPrimarySwingStartAngle() const;
+	float GetPrimarySwingAngle(float progress) const;
+	Vector2 GetPrimarySwingHandBase(float progress) const;
+	Vector2 GetPrimarySwingHandTip(float progress) const;
+	Vector2 GetAttackHandPoint(float sweepAngle, bool isRightSwing, float lengthScale = 1.0f) const;
+	Vector2 GetAttackHandPointAtRange(float sweepAngle, float rangeCells, float lengthScale = 1.0f) const;
+	Vector2 GetHeldHandBase(float heldAngle) const;
+	Vector2 GetHeldHandTip(float heldAngle, bool isRightHand) const;
+	Vector2 GetReachAroundHandPoint(bool isRightHand, float progress) const;
+	Vector2 GetHandstacheBase() const;
+	float GetHandstacheLength(bool isRightHand) const;
+	Vector2 GetHandstacheTip(bool isRightHand) const;
+	float GetHandstacheAngle(bool isRightHand) const;
+	bool ShouldHideHandstache(bool isRightHand) const;
 	int GetNextBasicAttackRange() const;
 	int GetCurrentBasicAttackRange() const;
 
@@ -118,8 +137,6 @@ class Enemy : public Entity
 	static bool BossFootprintContainsCell(Vector2 bossCenter, Vector2 cell);
 	static bool IsBossFootprintValid(Vector2 bossCenter);
 	static Color ClockHandOrange(unsigned char alpha);
-	static void DrawAttackClockHand(Vector2 clockCenter, float sweepAngle, bool isRightSwing, unsigned char alpha,
-									float lengthScale = 1.0f);
 									
 	void UpdateEnemyFace();
 	void DrawEnemyFace();
@@ -186,6 +203,8 @@ class Enemy : public Entity
 	float currentPrimaryAttackCooldown = 0.0f;
 	Vector2 punchDirection = Vector2{1.0f, 0.0f};
 	float punchHookSide = 1.0f;
+	float punchStartAngle = 0.0f;
+	float punchSweepDegrees = CLOCK_HAND_SWEEP_DEGREES;
 	bool nextBasicAttackIsRightSwing = true;
 	bool currentBasicAttackIsRightSwing = true;
 	int hourHandAttackRange = 1;
@@ -199,13 +218,13 @@ class Enemy : public Entity
 	int currentSecondaryAttack = 1;
 	int nextSecondaryAttack = 1;
 	float spinningSecondaryAttackDuration = 5.0f;
+	static constexpr float SPINNING_SECONDARY_WINDUP_ROTATION_DEGREES = 70.0f;
 	float spinningSecondarySpinAngle = 0.0f;
 	float spinningSecondarySpinSpeed = 680.0f;
 	float spinningSecondaryDamageCooldown = 0.0f;
 	float spinningSecondaryDamageInterval = 0.55f;
 	int spinningSecondarySpinDirection = 1;
 	static constexpr float SPINNING_SECONDARY_DAMAGE = 10.0f;
-	static constexpr int SPINNING_SECONDARY_RANGE = 2;
 	float specialWindUpDuration = 1.6f;
 	float specialRecoverDuration = 0.65f;
 	int currentSpecialAttack = 2;
