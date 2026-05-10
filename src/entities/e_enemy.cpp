@@ -3,6 +3,7 @@
 #include "raymath.h"
 #include <algorithm>
 #include <cstdlib>
+#include "scene.h"
 
 namespace
 {
@@ -399,4 +400,12 @@ void Enemy::Update()
 		UpdateSpecialRecover(deltaTime);
 		break;
 	}
+
+	UpdateEnemyFace();
+}
+
+void Enemy::UpdateEnemyFace() 
+{
+	currentEyeRotation = Lerp(currentEyeRotation, TargetEyeRotation(), 0.01f);
+	eyeOffsets = Vector2Lerp(eyeOffsets, Vector2Scale(Vector2Normalize(Vector2Subtract(playScene->player.GetPosition(), position)), maxEyeMovement), 0.1f);
 }

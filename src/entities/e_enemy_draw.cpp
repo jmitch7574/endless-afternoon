@@ -5,18 +5,23 @@
 #include <algorithm>
 #include <cmath>
 
-void Enemy::DrawEnemyFace(Vector2 center, float radius)
+void Enemy::DrawEnemyFace()
 {
-	const Rectangle leftEye = {center.x - radius * 0.52f, center.y - radius * 0.18f, radius * 0.62f, radius * 0.22f};
-	const Rectangle rightEye = {center.x + radius * 0.52f, center.y - radius * 0.18f, radius * 0.62f, radius * 0.22f};
+	Vector2 leftEyePos = Vector2Add(position, Vector2(-25, -20));
+	Vector2 rightEyePos = Vector2Add(position, Vector2(25, -20));
 
-	DrawRectanglePro(leftEye, Vector2{leftEye.width * 0.5f, leftEye.height * 0.5f}, 38.0f, WHITE);
-	DrawRectanglePro(rightEye, Vector2{rightEye.width * 0.5f, rightEye.height * 0.5f}, -38.0f, WHITE);
+	leftEyePos = Vector2Add(leftEyePos, eyeOffsets);
+	rightEyePos = Vector2Add(rightEyePos, eyeOffsets);
 
-	DrawCircleV(Vector2Add(center, Vector2{-radius * 0.30f, radius * 0.03f}), radius * 0.16f, WHITE);
-	DrawCircleV(Vector2Add(center, Vector2{radius * 0.30f, radius * 0.03f}), radius * 0.16f, WHITE);
-
-	DrawCircleV(Vector2Add(center, Vector2{0.0f, radius * 0.28f}), radius * 0.13f, WHITE);
+	if (GetState() == EnemyState::Recover) {
+		DrawEllipseV(leftEyePos, 15, 5, WHITE);
+		DrawEllipseV(rightEyePos, 15, 5, WHITE);
+	}
+	else
+	{
+		DrawCircleSector(leftEyePos, 20, 0 + currentEyeRotation, 180 + currentEyeRotation, 1, WHITE);
+		DrawCircleSector(rightEyePos, 20, 0 - currentEyeRotation, 180 - currentEyeRotation, 1, WHITE);
+	}
 }
 
 void Enemy::DrawAttackClockHand(Vector2 clockCenter, float sweepAngle, bool isRightSwing, unsigned char alpha,
@@ -188,7 +193,7 @@ void Enemy::Draw()
 
 	DrawCircleV(position, radius + CELL_SIZE * 0.13f, WHITE);
 	DrawCircleV(position, radius, bodyColor);
-	DrawEnemyFace(position, radius);
+	DrawEnemyFace();
 
 	if (currentState == EnemyState::WindUp)
 	{

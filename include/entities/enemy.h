@@ -17,6 +17,12 @@ enum class EnemyState
 	SpecialRecover
 };
 
+enum class EnemyEmotion
+{
+	Happy,
+	Angry
+};
+
 class Enemy : public Entity
 {
   public:
@@ -100,13 +106,25 @@ class Enemy : public Entity
 	static bool BossFootprintContainsCell(Vector2 bossCenter, Vector2 cell);
 	static bool IsBossFootprintValid(Vector2 bossCenter);
 	static Color ClockHandOrange(unsigned char alpha);
-	static void DrawEnemyFace(Vector2 center, float radius);
 	static void DrawAttackClockHand(Vector2 clockCenter, float sweepAngle, bool isRightSwing, unsigned char alpha,
 									float lengthScale = 1.0f);
+									
+	void UpdateEnemyFace();
+	void DrawEnemyFace();
 
 	// State
 	EnemyState currentState = EnemyState::Idle;
 	int maxHealth = 400;
+
+	// Facial Features
+	EnemyEmotion currentEmotion = EnemyEmotion::Angry;
+	float currentEyeRotation = 0;
+	float TargetEyeRotation() { return currentEmotion == EnemyEmotion::Angry ? 45 : 180; };
+
+	Vector2 eyeOffsets = Vector2(0, 0);
+	Vector2 targetPupilOffsets;
+
+	float maxEyeMovement = 10;
 
 	// Movement
 	Vector2 targetGridPosition;

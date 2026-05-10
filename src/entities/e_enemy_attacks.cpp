@@ -189,7 +189,10 @@ void Enemy::RunSelectedSpecialAttack()
 	}
 }
 
-void Enemy::SpecialAttack1() {}
+void Enemy::SpecialAttack1() 
+{
+	
+}
 
 void Enemy::SpecialAttack2()
 {
