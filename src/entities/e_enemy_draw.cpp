@@ -62,7 +62,7 @@ Vector2 LerpAroundBody(Vector2 center, float startAngle, float endAngle, float s
 
 void Enemy::DrawEnemyFace()
 {
-	float radius = CELL_SIZE * 1.5f;
+	float radius = CELL_SIZE * 1.5f  * scale;
 
 	// DRAW MARKINGS
 	for (int i = 0; i < 24; i++)
@@ -80,25 +80,30 @@ void Enemy::DrawEnemyFace()
 			Vector2Add(position, startOffset),
 			Vector2Add(position, endOffset),
 			(i % 2 == 0) ? 4.0f : 2.0f,
-			BROWN
+			ClockBrown()
 		);
 	}
 
 	// DRAW EYES
-	Vector2 leftEyePos = Vector2Add(position, Vector2(-25, -20));
-	Vector2 rightEyePos = Vector2Add(position, Vector2(25, -20));
+	Vector2 leftEyePos = Vector2Add(eyeOffsets, Vector2(-25, -20));
+	Vector2 rightEyePos = Vector2Add(eyeOffsets, Vector2(25, -20));
 
-	leftEyePos = Vector2Add(leftEyePos, eyeOffsets);
-	rightEyePos = Vector2Add(rightEyePos, eyeOffsets);
+	
+	leftEyePos = Vector2Scale(leftEyePos, scale);
+	rightEyePos = Vector2Scale(rightEyePos, scale);
+	
+	leftEyePos = Vector2Add(leftEyePos, position);
+	rightEyePos = Vector2Add(rightEyePos, position);
+
 
 	if (GetState() == EnemyState::Recover) {
-		DrawEllipseV(leftEyePos, 15, 5, WHITE);
-		DrawEllipseV(rightEyePos, 15, 5, WHITE);
+		DrawEllipseV(leftEyePos, 15 * scale, 5 * scale, ClockWhite());
+		DrawEllipseV(rightEyePos, 15 * scale, 5 * scale, ClockWhite());
 	}
 	else
 	{
-		DrawCircleSector(leftEyePos, 20, 0 + currentEyeRotation, 180 + currentEyeRotation, 1, WHITE);
-		DrawCircleSector(rightEyePos, 20, 0 - currentEyeRotation, 180 - currentEyeRotation, 1, WHITE);
+		DrawCircleSector(leftEyePos, 20 * scale, 0 + currentEyeRotation, 180 + currentEyeRotation, 1, ClockWhite());
+		DrawCircleSector(rightEyePos, 20 * scale, 0 - currentEyeRotation, 180 - currentEyeRotation, 1, ClockWhite());
 	}
 	
 	// DRAW HANDSTACHE
@@ -408,8 +413,8 @@ void Enemy::DrawSpinningSecondaryAttackEffect()
 
 void Enemy::Draw()
 {
-	Color bodyColor = ORANGE;
-	Color radiusColor = WHITE;
+	Color bodyColor = ClockOrange();
+	Color radiusColor = ClockWhite();
 	float radius = CELL_SIZE * 1.5f;
 
 	switch (currentState)
@@ -418,36 +423,36 @@ void Enemy::Draw()
 		bodyColor = Color{180, 115, 45, 255};
 		break;
 	case EnemyState::Advance:
-		bodyColor = ORANGE;
+		bodyColor = ClockOrange();
 		break;
 	case EnemyState::WindUp:
-		bodyColor = ORANGE;
+		bodyColor = ClockOrange();
 		break;
 	case EnemyState::Attack:
-		bodyColor = ORANGE;
+		bodyColor = ClockOrange();
 		break;
 	case EnemyState::Recover:
-		bodyColor = Fade(ORANGE, 0.45f);
+		bodyColor = ClockRest();
 		break;
 	case EnemyState::SecondaryWindUp:
-		bodyColor = ORANGE;
+		bodyColor = ClockOrange();
 		radius += sinf((float)GetTime() * 18.0f) * 7.0f;
 		break;
 	case EnemyState::SecondaryAttack:
-		bodyColor = ORANGE;
+		bodyColor = ClockOrange();
 		break;
 	case EnemyState::SecondaryRecover:
-		bodyColor = Fade(ORANGE, 0.45f);
+		bodyColor = ClockRest();
 		break;
 	case EnemyState::SpecialWindUp:
-		bodyColor = ORANGE;
+		bodyColor = ClockOrange();
 		radius += sinf((float)GetTime() * 14.0f) * 10.0f;
 		break;
 	case EnemyState::SpecialAttack:
-		bodyColor = ORANGE;
+		bodyColor = ClockOrange();
 		break;
 	case EnemyState::SpecialRecover:
-		bodyColor = Fade(ORANGE, 0.45f);
+		bodyColor = ClockRest();
 		break;
 	}
 
@@ -461,10 +466,15 @@ void Enemy::Draw()
 		}
 	}
 
+	if (worldSpace == WorldSpace::Floaty) bodyColor = ClockOrange();
 	DrawMovementTrail();
-	DrawCircleV(position, radius + CELL_SIZE * 0.13f, radiusColor);
-	DrawCircleV(position, radius, bodyColor);
+
+	DrawCircleV(position, (radius + CELL_SIZE * 0.13f) * scale, radiusColor);
+	DrawCircleV(position, radius * scale, bodyColor);
 	DrawEnemyFace();
+
+	
+	if (worldSpace == WorldSpace::Floaty) return;
 
 	if (currentState == EnemyState::WindUp)
 	{

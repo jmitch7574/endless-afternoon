@@ -5,6 +5,7 @@
 #include "utils.h"
 #include <algorithm>
 #include <cmath>
+#include <resource_loader.h>
 
 namespace
 {
@@ -25,6 +26,10 @@ void Enemy::TriggerPunchEffect()
 {
 	punchAnimationTime = 0.0f;
 	punchEffectHasHit = false;
+	punchDirection = GetPunchDirectionToTarget();
+	punchHookSide = currentBasicAttackIsRightSwing ? 1.0f : -1.0f;
+	PlaySound(Resources::GetWhoosh());
+	
 }
 
 void Enemy::UpdatePunchEffect(float deltaTime)
@@ -248,6 +253,9 @@ void Enemy::SpecialAttack2()
 	const float spinDegrees = 360.0f + 90.0f * (float)GetRandomValue(0, 3);
 	playScene->minuteHand.BeginBigDeadlySpin(spinDirection, spinDegrees);
 	playScene->hourHand.BeginBigDeadlySpin(spinDirection, spinDegrees);
+	
+	specialStateTimeLeft = 9;
+	specialStateTimeIn = 0;
 }
 
 void Enemy::SpecialAttack3()
@@ -258,4 +266,6 @@ void Enemy::SpecialAttack3()
 	}
 
 	playScene->StartRedLightGreenLight();
+	specialStateTimeLeft = 12;
+	specialStateTimeIn = 0;
 }

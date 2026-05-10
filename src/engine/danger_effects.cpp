@@ -51,16 +51,11 @@ void DangerEffects::Update()
 
   volume = Lerp(volume, targetVolume, 0.001f);
 
-  SetSoundVolume(Resources::s_heartbeat, volume);
-
-  for (int i = 0; i< 8; i++)
-  {
-    SetSoundVolume(Resources::s_tocks[i], volume);
-  }
+  Resources::UpdateHeartbeatSound(volume);
 
   if (SFXTimer > 2 - targetVolume * 1.2f)
   {
-    PlaySound(Resources::s_heartbeat);
+    PlaySound(Resources::GetHeartbeat());
     //PlaySound(Resources::s_tocks[GetRandomValue(0, 8)]);
 
     SFXTimer = 0;

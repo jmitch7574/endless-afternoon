@@ -6,6 +6,9 @@
 #include <algorithm>
 #include <cstdlib>
 #include "scene.h"
+#include <resource_loader.h>
+#include "arena_manager.h"
+#include "utils.h"
 
 namespace
 {
@@ -198,12 +201,14 @@ void Enemy::EnterState(EnemyState nextState)
 																   SPINNING_SECONDARY_WINDUP_ROTATION_DEGREES);
 			stateTimer = spinningSecondaryAttackDuration;
 			spinningSecondaryDamageCooldown = 0.0f;
+			PlaySound(Resources::GetSpin());
 		}
 		else
 		{
 			stateTimer = secondaryAttackDuration;
 			secondaryAttackHasHit = false;
 			secondaryPulsePreviousRadius = 0.0f;
+			PlaySound(Resources::GetSlam());
 		}
 		break;
 	case EnemyState::SecondaryRecover:
@@ -406,6 +411,7 @@ void Enemy::UpdateMovementTrail()
 void Enemy::Update()
 {
 	const float deltaTime = GetFrameTime();
+	UpdateEnemyFace();
 
 	position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
 	UpdateMovementTrail();
@@ -414,6 +420,65 @@ void Enemy::Update()
 	currentPrimaryAttackCooldown -= deltaTime;
 	timeSinceLastHit += deltaTime;
 	UpdatePunchEffect(deltaTime);
+	worldSpace = specialStateTimeLeft > 0 ? WorldSpace::Floaty : WorldSpace::Grid;
+
+	opacity = 1;
+
+	if (worldSpace == WorldSpace::Grid)
+	{
+		position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
+		currentMoveCooldown -= deltaTime;
+		primaryAttackMovementLockTimer -= deltaTime;
+		currentPrimaryAttackCooldown -= deltaTime;
+		timeSinceLastHit += deltaTime;
+		UpdatePunchEffect(deltaTime);
+		scale = Lerp(scale, 1, 0.2f);
+	}
+	else
+	{
+		specialStateTimeIn += GetFrameTime();
+		specialStateTimeLeft -= GetFrameTime();
+		
+		
+		float fadeStart = fmaxf(1 - specialStateTimeIn, 0);
+		float fadeEnd = fmaxf((specialStateTimeIn - 2), 0);
+
+		float f1 = fmaxf(fadeStart, fadeEnd);
+
+		float fadeStart2 = std::clamp(specialStateTimeLeft - 1.0f, 0.0f, 1.0f);
+		float fadeEnd2 = std::clamp(-1.0f - specialStateTimeLeft, 0.0f, 1.0f);
+
+		float f2 = fmaxf(fadeStart2, fadeEnd2);
+
+		opacity = fminf(f1, f2);
+
+		if (specialStateTimeIn > 1 && specialStateTimeLeft > 1)
+		{
+			//Vector2 floatPosition = Utils::AngleToVector2(GetTime() * 30);
+
+			float time = GetTime() * 0.4f;
+
+			Vector2 floatPosition = Vector2(sin(time), cos(time));
+			floatPosition = Vector2Multiply(floatPosition, Vector2(cos(time * -0.5f), sin(time - 0.5f)));
+			floatPosition = Vector2Multiply(floatPosition, Vector2(sin(time + 1.2f), sin(time - 0.1f)));
+			floatPosition = Vector2Multiply(floatPosition, Vector2(cos(time - 1.2f), cos(time + 0.67f )));
+			floatPosition = Vector2Normalize(floatPosition);
+
+			floatPosition = Vector2Add(floatPosition, Vector2(0, -0.5f));
+			//floatPosition = Vector2Multiply(floatPosition, Vector2(1, 2));
+			
+			floatPosition = Vector2Add(GRID_CENTER, Vector2Scale(floatPosition, GRID_TOTAL_SIZE_PX / 1.5f));
+
+			position = Vector2Lerp(position, floatPosition,0.05f);
+			scale = Lerp(scale, 3, 0.01f);
+			return;
+		}
+		else if (specialStateTimeLeft < 1)
+		{
+			position = Vector2Lerp(position, ArenaManager::GridPositionToWorld(gridPosition), lerpSpeed);
+			scale = Lerp(scale, 1, 0.01f);
+		}
+	}
 
 	switch (currentState)
 	{
@@ -453,7 +518,6 @@ void Enemy::Update()
 		break;
 	}
 
-	UpdateEnemyFace();
 }
 
 void Enemy::UpdateEnemyFace() 

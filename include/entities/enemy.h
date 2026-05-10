@@ -29,6 +29,12 @@ struct EnemyTrail
 	int opacity;
 };
 
+enum class WorldSpace
+{
+	Grid,
+	Floaty
+};
+
 class Enemy : public Entity
 {
   public:
@@ -46,6 +52,7 @@ class Enemy : public Entity
 	int GetNormalAttackCount() const;
 	int GetNormalAttacksPerCycle() const;
 	int GetMaxHealth() const;
+	float GetOpacity() { return opacity; }
 	void Hurt(float amount);
 	bool OccupiesGridPosition(Vector2 target) const;
 	bool TryPushGridPosition(Vector2 direction);
@@ -143,6 +150,11 @@ class Enemy : public Entity
 
 	// State
 	EnemyState currentState = EnemyState::Idle;
+	WorldSpace worldSpace = WorldSpace::Grid;
+	float scale = 1;
+	float specialStateTimeLeft = 0;
+	float specialStateTimeIn = 0;
+	float opacity = 1; // 0 - 1
 	int maxHealth = 400;
 	float timeSinceLastHit = 10;
 
@@ -236,4 +248,10 @@ class Enemy : public Entity
 	int normalAttacksPerCycle = 3;
 	int primaryCyclesCompleted = 0;
 	int primaryCyclesBeforeSpecial = 2;
+
+	// Enemy Colours
+	inline Color ClockWhite() { return Color{255, 255, 255, (unsigned char)(Enemy::GetOpacity() * 255.0f)}; }
+	inline Color ClockBrown() { return Color{127, 106, 79, (unsigned char)(Enemy::GetOpacity() * 255.0f)}; }
+	inline Color ClockOrange() { return Color{255, 161, 0, (unsigned char)(Enemy::GetOpacity() * 255.0f)}; }
+	inline Color ClockRest() { return Fade(ClockOrange(), 0.45f); }
 };
