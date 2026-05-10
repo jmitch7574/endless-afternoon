@@ -115,6 +115,7 @@ class Enemy : public Entity
 	// State
 	EnemyState currentState = EnemyState::Idle;
 	int maxHealth = 400;
+	float timeSinceLastHit = 10;
 
 	// Facial Features
 	EnemyEmotion currentEmotion = EnemyEmotion::Angry;

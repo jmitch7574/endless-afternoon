@@ -186,6 +186,7 @@ void Enemy::DrawSpinningSecondaryAttackEffect()
 void Enemy::Draw()
 {
 	Color bodyColor = ORANGE;
+	Color radiusColor = WHITE;
 	float radius = CELL_SIZE * 1.5f;
 
 	switch (currentState)
@@ -227,7 +228,17 @@ void Enemy::Draw()
 		break;
 	}
 
-	DrawCircleV(position, radius + CELL_SIZE * 0.13f, WHITE);
+	if (timeSinceLastHit < 1)
+	{
+		if (fmodf(timeSinceLastHit  * 8, 2) > 1)
+		{
+			Color a = radiusColor;
+			radiusColor = bodyColor;
+			bodyColor = a;
+		}
+	}
+
+	DrawCircleV(position, radius + CELL_SIZE * 0.13f, radiusColor);
 	DrawCircleV(position, radius, bodyColor);
 	DrawEnemyFace();
 

@@ -96,7 +96,7 @@ int Enemy::GetNormalAttacksPerCycle() const { return normalAttacksPerCycle; }
 
 int Enemy::GetMaxHealth() const { return maxHealth; }
 
-void Enemy::Hurt(float amount) { health = std::max(0.0f, health - amount); }
+void Enemy::Hurt(float amount) { health = std::max(0.0f, health - amount); timeSinceLastHit = 0; }
 
 void Enemy::SetTargetGridPosition(Vector2 target) { targetGridPosition = target; }
 
@@ -364,6 +364,7 @@ void Enemy::Update()
 	currentMoveCooldown -= deltaTime;
 	primaryAttackMovementLockTimer -= deltaTime;
 	currentPrimaryAttackCooldown -= deltaTime;
+	timeSinceLastHit += deltaTime;
 	UpdatePunchEffect(deltaTime);
 
 	switch (currentState)
