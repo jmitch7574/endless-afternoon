@@ -320,6 +320,7 @@ bool Enemy::TryMoveTowardTarget()
 		DistanceFromBossFootprint(gridPosition, targetGridPosition) > GetNextBasicAttackRange())
 	{
 		chaseMovesTaken = 0;
+		EnterState(EnemyState::SpecialWindUp);
 	}
 
 	return true;

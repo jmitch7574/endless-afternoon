@@ -199,7 +199,7 @@ class Enemy : public Entity
 	float lerpSpeed = 0.2f;
 	float moveCooldown = 0.5f;
 	float currentMoveCooldown = 0;
-	int chaseBudget = 6;
+	int chaseBudget = 10;
 	int chaseMovesTaken = 0;
 	EnemyTrail moveTrail[MOVE_TRAIL_SAMPLES] = {};
 
