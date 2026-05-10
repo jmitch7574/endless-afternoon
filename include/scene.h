@@ -67,6 +67,7 @@ class PlayMode : public Scene
 	ClockHand minuteHand;
 	ClockHand hourHand;
 	DangerEffects dangerEffects;
+	Music gameMusic;
 
   private:
 	struct RedLightCell

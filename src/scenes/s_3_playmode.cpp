@@ -108,11 +108,15 @@ PlayMode::PlayMode()
 	displayedEnemyHealth = enemy.GetHealth();
 	displayedPlayerHealth = player.GetHealth();
 	displayedPlayerStamina = player.GetStamina();
+	gameMusic = LoadMusicStream("resources/sountrack.wav");
+	SetMusicVolume(gameMusic, 0.2f);
+	PlayMusicStream(gameMusic);
 }
-PlayMode::~PlayMode(void) { playScene = nullptr; }
+PlayMode::~PlayMode(void) { playScene = nullptr; UnloadMusicStream(gameMusic);}
 
 void PlayMode::Update()
 {
+	UpdateMusicStream(gameMusic);
 	const float deltaTime = GetFrameTime();
 
 	if (victoryTriggered || gameOverTriggered)
