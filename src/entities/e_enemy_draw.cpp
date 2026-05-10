@@ -97,13 +97,13 @@ void Enemy::DrawEnemyFace()
 
 
 	if (GetState() == EnemyState::Recover) {
-		DrawEllipseV(leftEyePos, 15 * scale, 5 * scale, ClockWhite());
-		DrawEllipseV(rightEyePos, 15 * scale, 5 * scale, ClockWhite());
+		DrawEllipseV(leftEyePos, 15 * scale, 5 * scale, ClockHands());
+		DrawEllipseV(rightEyePos, 15 * scale, 5 * scale, ClockHands());
 	}
 	else
 	{
-		DrawCircleSector(leftEyePos, 20 * scale, 0 + currentEyeRotation, 180 + currentEyeRotation, 1, ClockWhite());
-		DrawCircleSector(rightEyePos, 20 * scale, 0 - currentEyeRotation, 180 - currentEyeRotation, 1, ClockWhite());
+		DrawCircleSector(leftEyePos, 20 * scale, 0 + currentEyeRotation, 180 + currentEyeRotation, 1, ClockHands());
+		DrawCircleSector(rightEyePos, 20 * scale, 0 - currentEyeRotation, 180 - currentEyeRotation, 1, ClockHands());
 	}
 	
 	// DRAW HANDSTACHE
@@ -111,16 +111,16 @@ void Enemy::DrawEnemyFace()
 	if (!ShouldHideHandstache(false))
 	{
 		CustomDraws::DrawArrow(moustacheBase, GetHandstacheAngle(false), GetHandstacheLength(false) * scale,
-							   HANDSTACHE_THICKNESS * scale, HANDSTACHE_FLETCH_LENGTH * scale, HANDSTACHE_FLETCH_ANGLE, ClockWhite());
+							   HANDSTACHE_THICKNESS * scale, HANDSTACHE_FLETCH_LENGTH * scale, HANDSTACHE_FLETCH_ANGLE, ClockHands());
 	}
 
 	if (!ShouldHideHandstache(true))
 	{
 		CustomDraws::DrawArrow(moustacheBase, GetHandstacheAngle(true), GetHandstacheLength(true) * scale,
-							   HANDSTACHE_THICKNESS * scale, HANDSTACHE_FLETCH_LENGTH * scale, HANDSTACHE_FLETCH_ANGLE, ClockWhite());
+							   HANDSTACHE_THICKNESS * scale, HANDSTACHE_FLETCH_LENGTH * scale, HANDSTACHE_FLETCH_ANGLE, ClockHands());
 	}
 
-	DrawCircleV(moustacheBase, HANDSTACHE_CENTER_DOT_RADIUS, ClockWhite());
+	DrawCircleV(moustacheBase, HANDSTACHE_CENTER_DOT_RADIUS, ClockHands());
 }
 
 Color Enemy::ClockHandOrange(unsigned char alpha) { return Color{196, 116, 36, alpha}; }

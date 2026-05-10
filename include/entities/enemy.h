@@ -251,12 +251,19 @@ class Enemy : public Entity
 	int primaryCyclesBeforeSpecial = 2;
 
 	// Enemy Colours
-	Color ClockWhite() { return Color{255, 255, 255, (unsigned char)(Enemy::GetOpacity() * 255.0f)}; }
+	Color ClockWhite() {
+		if (worldSpace == WorldSpace::Floaty && specialStateTimeIn >= 1 && specialStateTimeLeft >= 1)
+			return Color{255, 255, 255, (unsigned char)(Enemy::GetOpacity() * 128.0f)};
+		return Color{255, 255, 255, (unsigned char)(Enemy::GetOpacity() * 255.0f)};
+	}
+	Color ClockHands() {
+		return Color{255, 255, 255, (unsigned char)(Enemy::GetOpacity() * 255.0f)};
+	}
 	Color ClockBrown() { return Color{127, 106, 79, (unsigned char)(Enemy::GetOpacity() * 255.0f)}; }
 	Color ClockOrange() 
 	{ 
 		if (worldSpace == WorldSpace::Floaty && specialStateTimeIn >= 1 && specialStateTimeLeft >= 1)
-			return Color{255, 161, 0, (unsigned char)(Enemy::GetOpacity() * 255.0f)};
+			return Color{255, 161, 0, (unsigned char)(Enemy::GetOpacity() * 128.0f)};
 		return Color{255, 161, 0, (unsigned char)(Enemy::GetOpacity() * 255.0f)};
 	}
 	Color ClockRest() { return Fade(ClockOrange(), 0.45f); }
