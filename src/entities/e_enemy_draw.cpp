@@ -7,6 +7,29 @@
 
 void Enemy::DrawEnemyFace()
 {
+	float radius = CELL_SIZE * 1.5f;
+
+	// DRAW MARKINGS
+	for (int i = 0; i < 24; i++)
+	{
+		float angleDeg = clockMarkingValue + (i * 15);
+
+		float innerRadius = (i % 2 == 0)
+                ? radius - 15
+                : radius - 10;
+
+		Vector2 startOffset = Vector2Scale(Utils::AngleToVector2(angleDeg), innerRadius);
+		Vector2 endOffset = Vector2Scale(Utils::AngleToVector2(angleDeg), radius - 5);
+
+		DrawLineEx(
+			Vector2Add(position, startOffset),
+			Vector2Add(position, endOffset),
+			(i % 2 == 0) ? 4.0f : 2.0f,
+			BROWN
+		);
+	}
+
+	// DRAW EYES
 	Vector2 leftEyePos = Vector2Add(position, Vector2(-25, -20));
 	Vector2 rightEyePos = Vector2Add(position, Vector2(25, -20));
 
@@ -22,7 +45,20 @@ void Enemy::DrawEnemyFace()
 		DrawCircleSector(leftEyePos, 20, 0 + currentEyeRotation, 180 + currentEyeRotation, 1, WHITE);
 		DrawCircleSector(rightEyePos, 20, 0 - currentEyeRotation, 180 - currentEyeRotation, 1, WHITE);
 	}
+	
+	// DRAW HANDSTACHE
+	Vector2 moustacheBase = Vector2Add(position, Vector2(0, 20));
+	Vector2 glassFaceBase = Vector2Add(position, Vector2(0, 10));
+	
+
+	CustomDraws::DrawArrow(moustacheBase, (90 + currentMoustacheGap) + currentMoustacheOffset, 
+								75, 8, 15, 15, DARKBROWN);
+								
+
+	CustomDraws::DrawArrow(moustacheBase, (90 - currentMoustacheGap) + currentMoustacheOffset, 
+								75, 8, 15, 15, DARKBROWN);						
 }
+
 
 void Enemy::DrawAttackClockHand(Vector2 clockCenter, float sweepAngle, bool isRightSwing, unsigned char alpha,
 								float lengthScale)

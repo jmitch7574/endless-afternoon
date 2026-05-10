@@ -126,6 +126,31 @@ class Enemy : public Entity
 
 	float maxEyeMovement = 10;
 
+	float clockMarkingOffset = 0;
+	float clockMarkingValue = 0;
+	float clockMarkingLerp = 0.2f;
+
+	// Facial Features - Moustache
+	Vector2 positionLastFrame;
+
+	float TargetMoustacheGap(float x) 
+	{
+		if (x < -0.2f) return 15;
+		if (x > 0.2f) return 45;
+		return 30;
+	};
+	float currentMoustacheGap = 0;
+	float moustacheGapLerp = 0.1f;
+	
+	float TargetMoustacheOffset(float x)
+	{
+		if (x < -0.2f) return -25;
+		if (x > 0.2f) return 25;
+		return 0;
+	}
+	float currentMoustacheOffset = 0;
+	float moustacheOffsetLerp = 0.1f;
+
 	// Movement
 	Vector2 targetGridPosition;
 	float lerpSpeed = 0.2f;
