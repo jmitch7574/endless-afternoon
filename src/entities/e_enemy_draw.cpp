@@ -5,19 +5,60 @@
 #include <algorithm>
 #include <cmath>
 
-void Enemy::DrawEnemyFace(Vector2 center, float radius)
+void Enemy::DrawEnemyFace()
 {
-	const Rectangle leftEye = {center.x - radius * 0.52f, center.y - radius * 0.18f, radius * 0.62f, radius * 0.22f};
-	const Rectangle rightEye = {center.x + radius * 0.52f, center.y - radius * 0.18f, radius * 0.62f, radius * 0.22f};
+	float radius = CELL_SIZE * 1.5f;
 
-	DrawRectanglePro(leftEye, Vector2{leftEye.width * 0.5f, leftEye.height * 0.5f}, 38.0f, WHITE);
-	DrawRectanglePro(rightEye, Vector2{rightEye.width * 0.5f, rightEye.height * 0.5f}, -38.0f, WHITE);
+	// DRAW MARKINGS
+	for (int i = 0; i < 24; i++)
+	{
+		float angleDeg = clockMarkingValue + (i * 15);
 
-	DrawCircleV(Vector2Add(center, Vector2{-radius * 0.30f, radius * 0.03f}), radius * 0.16f, WHITE);
-	DrawCircleV(Vector2Add(center, Vector2{radius * 0.30f, radius * 0.03f}), radius * 0.16f, WHITE);
+		float innerRadius = (i % 2 == 0)
+                ? radius - 15
+                : radius - 10;
 
-	DrawCircleV(Vector2Add(center, Vector2{0.0f, radius * 0.28f}), radius * 0.13f, WHITE);
+		Vector2 startOffset = Vector2Scale(Utils::AngleToVector2(angleDeg), innerRadius);
+		Vector2 endOffset = Vector2Scale(Utils::AngleToVector2(angleDeg), radius - 5);
+
+		DrawLineEx(
+			Vector2Add(position, startOffset),
+			Vector2Add(position, endOffset),
+			(i % 2 == 0) ? 4.0f : 2.0f,
+			BROWN
+		);
+	}
+
+	// DRAW EYES
+	Vector2 leftEyePos = Vector2Add(position, Vector2(-25, -20));
+	Vector2 rightEyePos = Vector2Add(position, Vector2(25, -20));
+
+	leftEyePos = Vector2Add(leftEyePos, eyeOffsets);
+	rightEyePos = Vector2Add(rightEyePos, eyeOffsets);
+
+	if (GetState() == EnemyState::Recover) {
+		DrawEllipseV(leftEyePos, 15, 5, WHITE);
+		DrawEllipseV(rightEyePos, 15, 5, WHITE);
+	}
+	else
+	{
+		DrawCircleSector(leftEyePos, 20, 0 + currentEyeRotation, 180 + currentEyeRotation, 1, WHITE);
+		DrawCircleSector(rightEyePos, 20, 0 - currentEyeRotation, 180 - currentEyeRotation, 1, WHITE);
+	}
+	
+	// DRAW HANDSTACHE
+	Vector2 moustacheBase = Vector2Add(position, Vector2(0, 20));
+	Vector2 glassFaceBase = Vector2Add(position, Vector2(0, 10));
+	
+
+	CustomDraws::DrawArrow(moustacheBase, (90 + currentMoustacheGap) + currentMoustacheOffset, 
+								75, 8, 15, 15, DARKBROWN);
+								
+
+	CustomDraws::DrawArrow(moustacheBase, (90 - currentMoustacheGap) + currentMoustacheOffset, 
+								75, 8, 15, 15, DARKBROWN);						
 }
+
 
 void Enemy::DrawAttackClockHand(Vector2 clockCenter, float sweepAngle, bool isRightSwing, unsigned char alpha,
 								float lengthScale)
@@ -145,6 +186,7 @@ void Enemy::DrawSpinningSecondaryAttackEffect()
 void Enemy::Draw()
 {
 	Color bodyColor = ORANGE;
+	Color radiusColor = WHITE;
 	float radius = CELL_SIZE * 1.5f;
 
 	switch (currentState)
@@ -186,9 +228,19 @@ void Enemy::Draw()
 		break;
 	}
 
-	DrawCircleV(position, radius + CELL_SIZE * 0.13f, WHITE);
+	if (timeSinceLastHit < 1)
+	{
+		if (fmodf(timeSinceLastHit  * 8, 2) > 1)
+		{
+			Color a = radiusColor;
+			radiusColor = bodyColor;
+			bodyColor = a;
+		}
+	}
+
+	DrawCircleV(position, radius + CELL_SIZE * 0.13f, radiusColor);
 	DrawCircleV(position, radius, bodyColor);
-	DrawEnemyFace(position, radius);
+	DrawEnemyFace();
 
 	if (currentState == EnemyState::WindUp)
 	{

@@ -4,11 +4,6 @@
 #include "scene.h"
 #include "resource_loader.h"
 
-float targetOpacity;
-float opacity;
-
-float targetVolume;
-float volume = 0;
 
 DangerEffects::DangerEffects() {
   targetVolume = 0;
@@ -16,17 +11,20 @@ DangerEffects::DangerEffects() {
 
   targetOpacity = 0;
   opacity = 0;
+
+  singleton = this;
 }
 
 float SFXTimer;
 
 
+DangerEffects* DangerEffects::singleton = nullptr;
 
 void DangerEffects::Update() 
 { 
   targetOpacity = targetOpacity = 128 - (playScene->player.GetHealth() / 75.0f) * 128; 
   targetOpacity = std::max(targetOpacity, 0.0f);
-  opacity = Lerp(opacity, targetOpacity, 0.01f);
+  opacity = Lerp(opacity, targetOpacity, 0.05f);
 
   SFXTimer += GetFrameTime();
 
@@ -73,4 +71,9 @@ void DangerEffects::Draw()
 {
   DrawRectangle(0, 0, RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, Color(45, 0, 0, (unsigned char)opacity));
   DrawText(TextFormat("Target Volume: %f", targetVolume), 20, 230, 20, WHITE);
+}
+
+void DangerEffects::DisplayHurt() 
+{
+  singleton->opacity = fmaxf(singleton->opacity, 80);
 }

@@ -3,6 +3,7 @@
 #include "raymath.h"
 #include <algorithm>
 #include <cstdlib>
+#include "scene.h"
 
 namespace
 {
@@ -95,7 +96,7 @@ int Enemy::GetNormalAttacksPerCycle() const { return normalAttacksPerCycle; }
 
 int Enemy::GetMaxHealth() const { return maxHealth; }
 
-void Enemy::Hurt(float amount) { health = std::max(0.0f, health - amount); }
+void Enemy::Hurt(float amount) { health = std::max(0.0f, health - amount); timeSinceLastHit = 0; }
 
 void Enemy::SetTargetGridPosition(Vector2 target) { targetGridPosition = target; }
 
@@ -220,6 +221,9 @@ void Enemy::UpdateAdvance()
 
 	TryMoveTowardTarget();
 	TryPrimaryAttack();
+
+	clockMarkingOffset += 27;
+	clockMarkingValue -= 13;
 }
 
 bool Enemy::TryMoveTowardTarget()
@@ -360,6 +364,7 @@ void Enemy::Update()
 	currentMoveCooldown -= deltaTime;
 	primaryAttackMovementLockTimer -= deltaTime;
 	currentPrimaryAttackCooldown -= deltaTime;
+	timeSinceLastHit += deltaTime;
 	UpdatePunchEffect(deltaTime);
 
 	switch (currentState)
@@ -399,4 +404,22 @@ void Enemy::Update()
 		UpdateSpecialRecover(deltaTime);
 		break;
 	}
+
+	UpdateEnemyFace();
+}
+
+void Enemy::UpdateEnemyFace() 
+{
+
+	currentEyeRotation = Lerp(currentEyeRotation, TargetEyeRotation(), 0.01f);
+	eyeOffsets = Vector2Lerp(eyeOffsets, Vector2Scale(Vector2Normalize(Vector2Subtract(playScene->player.GetPosition(), position)), maxEyeMovement), 0.1f);
+
+	Vector2 normalizedDistanceFromLastFrame = Vector2Normalize(Vector2Subtract(position, positionLastFrame));
+
+	currentMoustacheGap = Lerp(currentMoustacheGap, TargetMoustacheGap(normalizedDistanceFromLastFrame.y), moustacheGapLerp);
+	currentMoustacheOffset = Lerp(currentMoustacheOffset, TargetMoustacheOffset(normalizedDistanceFromLastFrame.x), moustacheOffsetLerp);
+
+	positionLastFrame = Vector2Lerp(positionLastFrame, position, 0.4f);
+
+	clockMarkingValue = Lerp(clockMarkingValue, clockMarkingOffset, clockMarkingLerp);
 }

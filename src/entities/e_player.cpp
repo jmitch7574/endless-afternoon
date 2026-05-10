@@ -7,6 +7,7 @@
 #include "utils.h"
 #include <algorithm>
 #include <cmath>
+#include "scene_manager.h"
 
 namespace
 {
@@ -453,6 +454,9 @@ void Player::Hurt(float amount, DamageType damageType)
 	timeSinceLastDamage = 0;
 
 	health = std::max(0.0f, health - amount);
+
+	//if (damageType == D_Enemy) g_SceneManager.hitstunFrames = amount / 1.5f;
+	DangerEffects::singleton->DisplayHurt();
 }
 
 void Player::Knockback(Vector2 Knockback) {}
