@@ -55,9 +55,12 @@ void ClockHand::Advance()
 	advanceTime = 0;
 }
 
-void ClockHand::BeginBigDeadlySpin()
+void ClockHand::BeginBigDeadlySpin(int spinDirection)
 {
+	const int direction = spinDirection == 0 ? (GetRandomValue(0, 99) < 50 ? 1 : -1) : (spinDirection < 0 ? -1 : 1);
+
 	bigDeadlySpinTime = 0;
+	bigDeadlySpinCoefficient = 40.0f * (float)direction;
 	inBigDeadlySpin = true;
 }
 
@@ -68,4 +71,4 @@ Vector2 ClockHand::GetLargeExtendedPoint()
 
 bool ClockHand::IsMoving() const { return isAdvancing || inBigDeadlySpin; }
 
-float ClockHand::GetAngle() { return fmod(angleDeg + bigDeadlySpinTime * bigDeadlySpinCoefficient, 360.0f); }
+float ClockHand::GetAngle() { return Utils::NormalizeAngle(angleDeg + bigDeadlySpinTime * bigDeadlySpinCoefficient); }

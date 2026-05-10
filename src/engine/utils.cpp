@@ -4,9 +4,10 @@
 
 void Utils::SeedRandom()
 {
-	const auto now = std::chrono::system_clock::now();
-	const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
-	SetRandomSeed((unsigned int)seconds);
+	const auto now = std::chrono::high_resolution_clock::now();
+	const auto ticks = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+	const auto mixedTicks = ticks ^ (ticks >> 32);
+	SetRandomSeed((unsigned int)mixedTicks);
 }
 
 float Utils::Vector2ToAngle(Vector2 vec) 

@@ -71,6 +71,6 @@ void DangerEffects::Update()
 
 void DangerEffects::Draw() 
 {
-  DrawRectangle(0, 0, RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, Color(45, 0, 0, opacity));
+  DrawRectangle(0, 0, RENDER_TEXTURE_WIDTH, RENDER_TEXTURE_HEIGHT, Color(45, 0, 0, (unsigned char)opacity));
   DrawText(TextFormat("Target Volume: %f", targetVolume), 20, 230, 20, WHITE);
 }

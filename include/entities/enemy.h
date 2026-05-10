@@ -73,6 +73,7 @@ class Enemy : public Entity
 	void TryPrimaryAttack();
 	void TriggerPunchEffect();
 	void UpdatePunchEffect(float deltaTime);
+	bool PunchEffectHitsPlayerAtProgress(float progress) const;
 	void PrimaryAttack();
 	void CompletePrimaryAttackCycle();
 	void SecondaryAttack(float deltaTime);
@@ -122,6 +123,7 @@ class Enemy : public Entity
 	int attackTargetX = 0;
 	int attackTargetY = 0;
 	float punchAnimationTime = 1000.0f;
+	bool punchEffectHasHit = false;
 	float primaryAttackCooldown = 1.3f;
 	float primaryAttackMovementLockDuration = 0.0f;
 	float primaryAttackMovementLockTimer = 0.0f;
@@ -152,6 +154,7 @@ class Enemy : public Entity
 	float specialRecoverDuration = 0.65f;
 	int currentSpecialAttack = 2;
 	int nextSpecialAttack = 2;
+	int queuedClockHandSpinDirection = 0;
 
 	// Attack cycle
 	int normalAttackCount = 0;

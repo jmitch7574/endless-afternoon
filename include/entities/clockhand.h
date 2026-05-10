@@ -12,7 +12,7 @@ class ClockHand : public Entity
 	void Update() override;
 	void Draw() override;
 	void Advance();
-	void BeginBigDeadlySpin();
+	void BeginBigDeadlySpin(int spinDirection = 0);
 	Vector2 GetLargeExtendedPoint();
 	bool IsMoving() const;
 
