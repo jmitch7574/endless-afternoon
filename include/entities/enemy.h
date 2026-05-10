@@ -101,6 +101,7 @@ class Enemy : public Entity
 	void SpecialAttack1();
 	void SpecialAttack2();
 	void SpecialAttack3();
+	void SpecialAttack4();
 
 	// Drawing
 	void UpdateMovementTrail();
