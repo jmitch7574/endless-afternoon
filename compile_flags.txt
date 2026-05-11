@@ -1,0 +1,4 @@
+-IC:/Users/Jake/Programming/endless-afternoon/include
+-IC:/Users/Jake/Programming/endless-afternoon/build/_deps/raylib-src/src
+-IC:/Users/Jake/Programming/endless-afternoon/build/_deps/raylib_cpp-src/include
+-std=c++20

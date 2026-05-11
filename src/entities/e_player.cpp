@@ -1,15 +1,15 @@
 #include "arena_manager.h"
 #include "entities/enemy.h"
 #include "entities/player.h"
-#include "keybinds.h"
+#include "keybinds.hpp"
 #include "raylib-cpp.hpp"
+#include "resource_loader.h"
 #include "scene.h"
+#include "scene_manager.h"
 #include "screen_shake.h"
 #include "utils.h"
 #include <algorithm>
 #include <cmath>
-#include "scene_manager.h"
-#include "resource_loader.h"
 
 bool GodMode = false;
 
@@ -69,19 +69,19 @@ Vector2 GetHeldMovementDirection()
 {
 	Vector2 direction = Vector2{0.0f, 0.0f};
 
-	if (IsKeyDown(MOVE_LEFT))
+	if (IsKeyDown(KEYBINDS.moveLeft.key))
 	{
 		direction.x -= 1.0f;
 	}
-	if (IsKeyDown(MOVE_RIGHT))
+	if (IsKeyDown(KEYBINDS.moveRight.key))
 	{
 		direction.x += 1.0f;
 	}
-	if (IsKeyDown(MOVE_UP))
+	if (IsKeyDown(KEYBINDS.moveUp.key))
 	{
 		direction.y -= 1.0f;
 	}
-	if (IsKeyDown(MOVE_DOWN))
+	if (IsKeyDown(KEYBINDS.moveDown.key))
 	{
 		direction.y += 1.0f;
 	}
@@ -160,8 +160,11 @@ float Player::GetStamina() const { return stamina; }
 
 float Player::GetMaxStamina() const { return maxStamina; }
 
-void Player::FullHeal() { health = 100; stamina = 100;}
-	
+void Player::FullHeal()
+{
+	health = 100;
+	stamina = 100;
+}
 
 void Player::Update()
 {
@@ -187,25 +190,25 @@ void Player::Update()
 		actionDirection = currentDirection;
 	}
 
-	if (IsKeyPressed(PRIMARY))
+	if (IsKeyPressed(KEYBINDS.attack.key))
 	{
 		TryAttack(actionDirection);
 	}
 
-	if (!attackedThisFrame && IsKeyPressed(SECONDARY))
+	if (!attackedThisFrame && IsKeyPressed(KEYBINDS.dash.key))
 	{
 		TryDash(actionDirection);
 	}
 
 	if (!dashedThisFrame)
 	{
-		if (IsKeyDown(MOVE_LEFT))
+		if (IsKeyDown(KEYBINDS.moveLeft.key))
 			TryMove(Vector2(-1, 0));
-		if (IsKeyDown(MOVE_RIGHT))
+		if (IsKeyDown(KEYBINDS.moveRight.key))
 			TryMove(Vector2(1, 0));
-		if (IsKeyDown(MOVE_UP))
+		if (IsKeyDown(KEYBINDS.moveUp.key))
 			TryMove(Vector2(0, -1));
-		if (IsKeyDown(MOVE_DOWN))
+		if (IsKeyDown(KEYBINDS.moveDown.key))
 			TryMove(Vector2(0, 1));
 	}
 
@@ -480,7 +483,8 @@ void Player::TryDash(Vector2 dir)
 
 void Player::Hurt(float amount, DamageType damageType)
 {
-	if (GodMode) return;
+	if (GodMode)
+		return;
 
 	if (IsInvulnerable() && damageType != D_EvilZone)
 	{
@@ -493,7 +497,7 @@ void Player::Hurt(float amount, DamageType damageType)
 	hitFlashTimer = HIT_FLASH_DURATION;
 	ScreenShake::Shake(PLAYER_HIT_SHAKE_STRENGTH, PLAYER_HIT_SHAKE_DURATION);
 
-	//if (damageType == D_Enemy) g_SceneManager.hitstunFrames = amount / 1.5f;
+	// if (damageType == D_Enemy) g_SceneManager.hitstunFrames = amount / 1.5f;
 	DangerEffects::singleton->DisplayHurt();
 	PlaySound(Resources::GetPlayerHurt());
 }

@@ -84,3 +84,18 @@ add_custom_command(TARGET endless_afternoon POST_BUILD
         ${CMAKE_SOURCE_DIR}/resources
         $<TARGET_FILE_DIR:endless_afternoon>/resources
 )
+
+# ---------------------------------------------------------------------------
+# clangd support
+# ---------------------------------------------------------------------------
+set(CLANGD_FLAGS
+    "-I${CMAKE_SOURCE_DIR}/include"
+    "-I${CMAKE_BINARY_DIR}/_deps/raylib-src/src"
+    "-I${CMAKE_BINARY_DIR}/_deps/raylib_cpp-src/include"
+    "-std=c++20"
+)
+list(JOIN CLANGD_FLAGS "\n" CLANGD_FLAGS_STR)
+file(GENERATE
+    OUTPUT "${CMAKE_SOURCE_DIR}/compile_flags.txt"
+    CONTENT "${CLANGD_FLAGS_STR}\n"
+)

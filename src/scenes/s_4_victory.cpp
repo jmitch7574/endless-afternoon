@@ -1,5 +1,5 @@
 #include "arena_manager.h"
-#include "keybinds.h"
+#include "keybinds.hpp"
 #include "renderer.h"
 #include "scene.h"
 #include "scene_manager.h"
@@ -60,7 +60,7 @@ VictoryScreen::~VictoryScreen() {}
 
 void VictoryScreen::Update()
 {
-	if (IsKeyPressed(PRIMARY))
+	if (IsKeyPressed(KEYBINDS.accept.key))
 	{
 		g_SceneManager.SetScene(std::make_unique<PlayMode>());
 	}
@@ -73,5 +73,5 @@ void VictoryScreen::Draw()
 
 	DrawCenteredText("VICTORY", 155.0f, TITLE_SIZE, CLOCK_ORANGE);
 	DrawCenteredText("The clock has stopped.", 640.0f, 36, WHITE);
-	DrawCenteredText(TextFormat("Press %s to fight again", ACCEPT_STRING), 742.0f, 28, Fade(WHITE, 0.68f));
+	DrawCenteredText(TextFormat("Press %s to fight again", KEYBINDS.accept.string), 742.0f, 28, Fade(WHITE, 0.68f));
 }

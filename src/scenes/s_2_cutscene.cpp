@@ -1,4 +1,4 @@
-#include "keybinds.h"
+#include "keybinds.hpp"
 #include "raylib-cpp.hpp"
 #include "scene.h"
 #include "scene_manager.h"
@@ -13,10 +13,7 @@ constexpr int FAST_FORWARD_TICK_MULTIPLIER = 5;
 constexpr int LINE_END_PAUSE_CHARACTERS = 30;
 constexpr int CUTSCENE_FADE_TICKS = 180;
 
-int GetTextAdvanceTicks()
-{
-	return IsKeyDown(SECONDARY) ? FAST_FORWARD_TICK_MULTIPLIER : 1;
-}
+int GetTextAdvanceTicks() { return IsKeyDown(KEYBINDS.dash.key) ? FAST_FORWARD_TICK_MULTIPLIER : 1; }
 } // namespace
 
 std::string lines[] = {
@@ -61,7 +58,7 @@ void Cutscene::Update()
 
 	textToDisplay = currentString.substr(0, shownText);
 
-	if (IsKeyPressed(PRIMARY))
+	if (IsKeyPressed(KEYBINDS.accept.key))
 		cutsceneSkipped = true;
 
 	if (shownText > currentString.length() + LINE_END_PAUSE_CHARACTERS && currentLine < 2)
@@ -85,8 +82,9 @@ void Cutscene::Draw()
 {
 	ClearBackground(BLACK);
 	DrawText(TextSubtext(currentString.c_str(), 0, shownText), 200, 300, 64, WHITE);
-	DrawText(std::format("Press {} to Skip", ACCEPT_STRING).c_str(), 50, 50, 32, WHITE);
-	DrawText(std::format("Hold {} to Speed Up", SECONDARY_STRING).c_str(), 50, 90, 28, Fade(WHITE, 0.72f));
+	DrawText(std::format("Press {} to Skip", KEYBINDS.accept.string).c_str(), 50, 50, 32, WHITE);
+	DrawText(std::format("Hold {} to Speed Up", KEYBINDS.speedUpCutscene.string).c_str(), 50, 90, 28,
+			 Fade(WHITE, 0.72f));
 
 	int actualFade = std::min(fadeTicks * 2, 255);
 

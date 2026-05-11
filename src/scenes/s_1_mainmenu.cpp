@@ -1,5 +1,5 @@
 #include "arena_manager.h"
-#include "keybinds.h"
+#include "keybinds.hpp"
 #include "raymath.h"
 #include "renderer.h"
 #include "scene.h"
@@ -123,17 +123,17 @@ void MainMenu::Update()
 		selectedOption = MenuOption::Quit;
 	}
 
-	if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(MOVE_RIGHT))
+	if (IsKeyPressed(KEYBINDS.moveRight.key))
 	{
 		selectedOption = MenuOption::Quit;
 	}
 
-	if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(MOVE_LEFT))
+	if (IsKeyPressed(KEYBINDS.moveLeft.key))
 	{
 		selectedOption = MenuOption::Play;
 	}
 
-	const bool accepted = IsKeyPressed(PRIMARY) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+	const bool accepted = IsKeyPressed(KEYBINDS.accept.key) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 
 	if (!accepted)
 	{
@@ -171,5 +171,7 @@ void MainMenu::Draw()
 
 	DrawMenuButton(PlayButtonBounds(), "PLAY", playSelected, hoverPlay);
 	DrawMenuButton(QuitButtonBounds(), "QUIT", !playSelected, hoverQuit);
-	DrawCenteredText(TextFormat("Use Left/Right and %s", ACCEPT_STRING), 922.0f, 26, Fade(WHITE, 0.66f));
+	DrawCenteredText(
+		TextFormat("Use %s / %s and %s", KEYBINDS.moveLeft.string, KEYBINDS.moveRight.string, KEYBINDS.accept.string),
+		922.0f, 26, Fade(WHITE, 0.66f));
 }
